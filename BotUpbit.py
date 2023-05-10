@@ -57,8 +57,8 @@ class BotCoin():
         _buy_max_prc = self.tot_evl_price / len(self.q_l)
         self.buy_max_price = _buy_max_prc if _buy_max_prc > 5000 else 5000
 
-        # line_message(f'BotCoinSwing \n평가금액 : {self.tot_evl_price}원 \n상위종목 : {self.q_l} \n다른종목 : {self.r_l}')
-        line_message(f'BotCoinSwing \n평가금액 : {self.tot_evl_price}원')
+        # line_message(f'BotUpbit \n평가금액 : {self.tot_evl_price}원 \n상위종목 : {self.q_l} \n다른종목 : {self.r_l}')
+        line_message(f'BotUpbit \n평가금액 : {self.tot_evl_price}원')
 
         __tn = datetime.datetime.now()
         tn_diff = (__tn - _tn).seconds
@@ -278,7 +278,7 @@ class BotCoin():
         __tn_div = __tn.minute % 30
         self.time_backtest = threading.Timer(1800 - (60 * __tn_div) - __tn.second, self.stock_order)
         self.time_backtest.start()
-        line_message(f'BotCoinSwing \n시작 : {_tn}, \n금액 : {int(self.tot_evl_price)}원, \n종료 : {__tn}, {sel_txt}')
+        line_message(f'BotUpbit \n시작 : {_tn}, \n금액 : {int(self.tot_evl_price)}원, \n종료 : {__tn}, {sel_txt}')
         
         
     def get_balance_code_list(self, obj=False):
@@ -325,6 +325,6 @@ if __name__ == '__main__':
 
         except Exception as e:
 
-            line_message(f"BotCoinSwing Error : {e}")
+            line_message(f"BotUpbit Error : {e}")
             break
 
