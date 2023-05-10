@@ -197,28 +197,44 @@ class BotCoin():
 
                         if 1 < bal_pft < hp:
 
-                            if (sel_cnt == 1) and (t1 <= los_dif) and psd_ord_01:
+                            if (sel_cnt == 1) and (t1 <= los_dif) and psb_ord_00:
 
-                                self.pu.sell_market_order(symbol, ord_qty_01)
-                                _ror = ror(bal_fst * ord_qty_01, cur_prc * ord_qty_01)
+                                bool_01_end = False
+                                if psd_ord_01:
+                                    qty = ord_qty_01
+                                elif psb_ord_02:
+                                    qty = ord_qty_02
+                                else:
+                                    qty = bal_qty
+                                    bool_01_end = True
+
+                                self.pu.sell_market_order(symbol, qty)
+                                _ror = ror(bal_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S1] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
 
-                                if sam_qty_01:
+                                if bool_01_end:
                                     obj_lst.pop(symbol, None)
                             
-                            elif (sel_cnt == 2) and (t2 <= los_dif) and psb_ord_02:
+                            elif (sel_cnt == 2) and (t2 <= los_dif) and psb_ord_00:
 
-                                self.pu.sell_market_order(symbol, ord_qty_02)
-                                _ror = ror(bal_fst * ord_qty_02, cur_prc * ord_qty_02)
+                                bool_02_end = False
+                                if psb_ord_02:
+                                    qty = ord_qty_02
+                                else:
+                                    qty = bal_qty
+                                    bool_02_end = True
+
+                                self.pu.sell_market_order(symbol, qty)
+                                _ror = ror(bal_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S2] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
 
-                                if sam_qty_02:
+                                if bool_02_end:
                                     obj_lst.pop(symbol, None)
 
                             elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
