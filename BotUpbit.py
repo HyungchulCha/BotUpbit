@@ -55,6 +55,7 @@ class BotCoin():
         prc_ttl, prc_lmt, _, bal_lst  = self.get_balance_info(self.q_l)
         self.b_l = list(set(self.q_l + bal_lst))
         self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
+        self.prc_ttl = 10000000
         self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - self.const_up
         prc_max = self.prc_ttl / len(self.q_l)
         self.prc_max = prc_max if prc_max > self.const_dn else self.const_dn
@@ -71,22 +72,24 @@ class BotCoin():
     # Generate Neck Dataframe
     def gen_neck_df(self, df):
 
-        df['close_prev'] = df['close'].shift()
-        df['ma05'] = df['close'].rolling(5).mean()
-        df['ma20'] = df['close'].rolling(20).mean()
-        df['ma60'] = df['close'].rolling(60).mean()
-        df['ma05_prev'] = df['ma05'].shift()
-        df['ma20_prev'] = df['ma20'].shift()
-        df['ma60_prev'] = df['ma60'].shift()
-        height_5_20_max = df['high'].rolling(20).max()
-        height_5_20_min = df['low'].rolling(20).min()
-        df['height_5_20'] = (((height_5_20_max / height_5_20_min) - 1) * 100).shift(5)
+        if not (df is None):
 
-        return df
+            df['close_prev'] = df['close'].shift()
+            df['ma05'] = df['close'].rolling(5).mean()
+            df['ma20'] = df['close'].rolling(20).mean()
+            df['ma60'] = df['close'].rolling(60).mean()
+            df['ma05_prev'] = df['ma05'].shift()
+            df['ma20_prev'] = df['ma20'].shift()
+            df['ma60_prev'] = df['ma60'].shift()
+            height_5_20_max = df['high'].rolling(20).max()
+            height_5_20_min = df['low'].rolling(20).min()
+            df['height_5_20'] = (((height_5_20_max / height_5_20_min) - 1) * 100).shift(5)
+
+            return df
     
 
     # Generate DataFrame
-    def gen_upt_df(self, tk, tf, lm):
+    def gen_ubt_df(self, tk, tf, lm):
         ohlcv = pyupbit.get_ohlcv(ticker=tk, interval=tf, count=lm)
         if not (ohlcv is None) and len(ohlcv) >= lm:
 
@@ -158,7 +161,7 @@ class BotCoin():
             is_notnul_obj = not (not obj_lst)
             is_symbol_bal = symbol in bal_lst
             is_symbol_obj = symbol in obj_lst
-            is_posble_ord = (bal_lst['KRW-KRW']['b'] > self.prc_max)
+            is_posble_ord = (self.prc_lmt > self.prc_max)
 
             df = self.gen_neck_df(self.gen_ubt_df(symbol, '30m', 80))
 
