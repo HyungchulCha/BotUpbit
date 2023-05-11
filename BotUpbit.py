@@ -33,7 +33,7 @@ class BotCoin():
         self.prc_lmt = 0
         self.prc_max = 0
 
-        self.const_up = 400000000
+        self.const_up = 500000000
         self.const_dn = 5000
 
     
