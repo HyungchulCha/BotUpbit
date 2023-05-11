@@ -17,10 +17,9 @@ class BotCoin():
         self.is_aws = True
         self.access_key = UB_ACCESS_KEY_AWS if self.is_aws else UB_ACCESS_KEY_NAJU
         self.secret_key = UB_SECRET_KEY_AWS if self.is_aws else UB_SECRET_KEY_NAJU
-        self.pu = pyupbit.Upbit(self.access_key, self.secret_key)
+        self.ubt = pyupbit.Upbit(self.access_key, self.secret_key)
         
         self.q_l = []
-        self.r_l = []
         self.b_l = []
 
         self.time_order = None
@@ -30,8 +29,12 @@ class BotCoin():
         self.bool_balance = False
         self.bool_order = False
         
-        self.tot_evl_price = 0
-        self.buy_max_price = 0
+        self.prc_ttl = 0
+        self.prc_lmt = 0
+        self.prc_max = 0
+
+        self.const_up = 400000000
+        self.const_dn = 5000
 
     
     def init_per_day(self):
@@ -46,48 +49,84 @@ class BotCoin():
         _tn = datetime.datetime.now()
         _tn_micro = _tn.microsecond / 1000000
 
-        self.pu = pyupbit.Upbit(self.access_key, self.secret_key)
-        _b_l = self.get_balance_code_list()
-        self.q_l = self.get_ticker_rank()
-        self.r_l = list(set(_b_l).difference(self.q_l))
-        self.b_l = list(set(self.q_l + _b_l))
+        self.ubt = pyupbit.Upbit(self.access_key, self.secret_key)
 
-        _ttl_evl_prc = int(self.get_total_price(_b_l))
-        self.tot_evl_price = _ttl_evl_prc if _ttl_evl_prc < 400000000 else 400000000
-        _buy_max_prc = self.tot_evl_price / len(self.q_l)
-        self.buy_max_price = _buy_max_prc if _buy_max_prc > 5000 else 5000
+        self.q_l = pyupbit.get_tickers("KRW")
+        prc_ttl, prc_lmt, _, bal_lst  = self.get_balance_info(self.q_l)
+        self.b_l = list(set(self.q_l + bal_lst))
+        self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
+        self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - self.const_up
+        prc_max = self.prc_ttl / len(self.q_l)
+        self.prc_max = prc_max if prc_max > self.const_dn else self.const_dn
 
-        # line_message(f'BotUpbit \n평가금액 : {self.tot_evl_price}원 \n상위종목 : {self.q_l} \n다른종목 : {self.r_l}')
-        line_message(f'BotUpbit \n평가금액 : {self.tot_evl_price}원')
+        line_message(f'BotUpbit \nTotal Price : {self.prc_ttl} KRW \nSymbol List : {len(self.b_l)}')
 
         __tn = datetime.datetime.now()
         tn_diff = (__tn - _tn).seconds
 
-        self.time_rebalance = threading.Timer(43200 - tn_diff - _tn_micro, self.init_per_day)
+        self.time_rebalance = threading.Timer(1800 - tn_diff - _tn_micro, self.init_per_day)
         self.time_rebalance.start()
 
+
+    # Generate Neck Dataframe
+    def gen_neck_df(self, df):
+
+        df['close_prev'] = df['close'].shift()
+        df['ma05'] = df['close'].rolling(5).mean()
+        df['ma20'] = df['close'].rolling(20).mean()
+        df['ma60'] = df['close'].rolling(60).mean()
+        df['ma05_prev'] = df['ma05'].shift()
+        df['ma20_prev'] = df['ma20'].shift()
+        df['ma60_prev'] = df['ma60'].shift()
+        height_5_20_max = df['high'].rolling(20).max()
+        height_5_20_min = df['low'].rolling(20).min()
+        df['height_5_20'] = (((height_5_20_max / height_5_20_min) - 1) * 100).shift(5)
+
+        return df
     
-    def get_total_price(self, _l):
-        if 'KRW-KRW' in _l:
-            _l.pop('KRW-KRW', None)
-        _o = self.get_balance_code_list(True)
-        _p = pyupbit.get_current_price(_l)
-        _t = 0
-        if len(_l) > 0:
-            for l in _l:
-                _t = _t + (float(_p[l]) * _o[l]['b'])
-        _t = _t + _o['KRW-KRW']['t']
-        return _t
+
+    # Generate DataFrame
+    def gen_upt_df(self, tk, tf, lm):
+        ohlcv = pyupbit.get_ohlcv(ticker=tk, interval=tf, count=lm)
+        if not (ohlcv is None) and len(ohlcv) >= lm:
+
+            return gen_neck_df(ohlcv)
+        
+
+    # Balance Code List    
+    def get_balance_info(self, tks):
+        bal_cur = pyupbit.get_current_price(tks)
+        bal_lst = self.ubt.get_balances()
+        bal_krw = 0
+        prc = 0
+        obj = {}
+        lst = []
+        if len(bal_lst) > 0:
+            for bl in bal_lst:
+                avgp = float(bl['avg_buy_price'])
+                blnc = float(bl['balance'])
+                tikr = bl['unit_currency'] + '-' + bl['currency']
+                if tikr != 'KRW-KRW':
+                    obj[tikr] = {
+                        'a': avgp,
+                        'b': blnc
+                    }
+                    prc = prc + (bal_cur[tikr] * blnc)
+                    lst.append(tikr)
+                else:
+                    prc = prc + blnc
+                    bal_krw = blnc
+
+        return prc, bal_krw, obj, lst
     
-    
-    def get_ticker_rank(self):
-        _tks = pyupbit.get_tickers("KRW")
-        tks = pyupbit.get_current_price(_tks, True, True)[0]
-        tks_srt = sorted(tks, key=lambda x: x['acc_trade_price_24h'])
-        tks_rnk = []
-        for tk in tks_srt:
-            tks_rnk.append(tk['market'])
-        return tks_rnk
+        
+    # Not Signed Cancel Order
+    def get_remain_cancel(self, l):
+        for _l in l:
+            rmn_lst = self.ubt.get_order(_l)
+            if len(rmn_lst) > 0:
+                for rmn in rmn_lst:
+                    self.ubt.cancel_order(rmn['uuid'])
 
 
     def stock_order(self):
@@ -105,7 +144,7 @@ class BotCoin():
 
         self.get_remain_cancel(self.b_l)
 
-        bal_lst = self.get_balance_code_list(True)
+        _, _, bal_lst, _ = self.get_balance_info(self.q_l)
         sel_lst = []
 
         if os.path.isfile(FILE_URL_BLNC_3M):
@@ -114,17 +153,14 @@ class BotCoin():
             obj_lst = {}
             save_file(FILE_URL_BLNC_3M, obj_lst)
 
-        i = 1
         for symbol in self.b_l:
 
             is_notnul_obj = not (not obj_lst)
             is_symbol_bal = symbol in bal_lst
             is_symbol_obj = symbol in obj_lst
-            is_posble_ord = (bal_lst['KRW-KRW']['b'] > self.buy_max_price)
-            is_remain_sym = symbol in self.r_l
+            is_posble_ord = (bal_lst['KRW-KRW']['b'] > self.prc_max)
 
-            _df = pyupbit.get_ohlcv(symbol, interval='minute30', count=80)
-            df = gen_neck_df(_df)
+            df = self.gen_neck_df(self.gen_ubt_df(symbol, '30m', 80))
 
             if not (df is None):
                 
@@ -137,7 +173,7 @@ class BotCoin():
                 m60_val = df_head['ma60'].iloc[-1]
 
                 cur_prc = float(cls_val)
-                cur_bal = round((self.buy_max_price / cur_prc), 4)
+                cur_bal = round((self.prc_max / cur_prc), 4)
 
                 if is_symbol_bal and (not is_symbol_obj):
                     obj_lst[symbol] = {'x': copy.deepcopy(bal_lst[symbol]['a']), 'a': copy.deepcopy(bal_lst[symbol]['a']), 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
@@ -147,17 +183,17 @@ class BotCoin():
                     obj_lst.pop(symbol, None)
                     print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
 
-                if (not is_remain_sym) and is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= 10000))):
+                if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= 10000))):
 
                     if \
                     (1.1 < hgt_val < 15) and \
                     (m60_val < m20_val < m05_val < cls_val < clp_val * 1.05) and \
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
-                        self.pu.buy_market_order(symbol, self.buy_max_price)
+                        self.ubt.buy_market_order(symbol, self.prc_max)
                         print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-                        sel_lst.append({'c': '[B]' + symbol, 'r': cur_bal})                    
+                        sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})                    
 
                 if is_symbol_bal and is_notnul_obj:
 
@@ -171,7 +207,7 @@ class BotCoin():
                         obj_lst[symbol]['x'] = cur_prc
                         obj_lst[symbol]['a'] = copy.deepcopy(bal_lst[symbol]['a'])
 
-                        print(f'{symbol} : 현재가 {cur_prc}, Increase !!!')
+                        print(f'{symbol} : Current Price {cur_prc}, Increase !!!')
 
                     if obj_lst[symbol]['x'] > cur_prc:
                         
@@ -187,13 +223,11 @@ class BotCoin():
                         ord_rto_02 = (3/8)
                         ord_qty_01 = bal_qty * ord_rto_01
                         ord_qty_02 = bal_qty * ord_rto_02
-                        sam_qty_01 = (bal_qty == ord_qty_01)
-                        sam_qty_02 = (bal_qty == ord_qty_02)
                         psb_ord_00 = cur_prc * bal_qty > 5000
                         psd_ord_01 = cur_prc * ord_qty_01 > 5000
                         psb_ord_02 = cur_prc * ord_qty_02 > 5000
 
-                        print(f'{symbol} : 최고가 {obj_max}, 최고수익 {round(obj_pft, 4)}, 현재가 {cur_prc}, 현재수익 {round(bal_pft, 4)}')
+                        print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
 
                         if 1 < bal_pft < hp:
 
@@ -208,7 +242,7 @@ class BotCoin():
                                     qty = bal_qty
                                     bool_01_end = True
 
-                                self.pu.sell_market_order(symbol, qty)
+                                self.ubt.sell_market_order(symbol, qty)
                                 _ror = ror(bal_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S1] ' + symbol, 'r': round(_ror, 4)})
@@ -227,7 +261,7 @@ class BotCoin():
                                     qty = bal_qty
                                     bool_02_end = True
 
-                                self.pu.sell_market_order(symbol, qty)
+                                self.ubt.sell_market_order(symbol, qty)
                                 _ror = ror(bal_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S2] ' + symbol, 'r': round(_ror, 4)})
@@ -239,7 +273,7 @@ class BotCoin():
 
                             elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
 
-                                self.pu.sell_market_order(symbol, bal_qty)
+                                self.ubt.sell_market_order(symbol, bal_qty)
                                 _ror = ror(bal_fst * bal_qty, cur_prc * bal_qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[S3] ' + symbol, 'r': round(_ror, 4)})
@@ -250,7 +284,7 @@ class BotCoin():
 
                         elif (hp <= bal_pft) and psb_ord_00:
 
-                            self.pu.sell_market_order(symbol, bal_qty)
+                            self.ubt.sell_market_order(symbol, bal_qty)
                             _ror = ror(bal_fst * bal_qty, cur_prc * bal_qty)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
@@ -258,15 +292,11 @@ class BotCoin():
 
                         elif (bal_pft <= ct) and psb_ord_00:
 
-                            self.pu.sell_market_order(symbol, bal_qty)
+                            self.ubt.sell_market_order(symbol, bal_qty)
                             _ror = ror(bal_fst * bal_qty, cur_prc * bal_qty)
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
-
-            # if i % 8 == 0:
-            #     time.sleep(0.4)
-            # i = i + 1
 
         save_file(FILE_URL_BLNC_3M, obj_lst)
 
@@ -276,33 +306,11 @@ class BotCoin():
 
         __tn = datetime.datetime.now()
         __tn_div = __tn.minute % 30
+
         self.time_backtest = threading.Timer(1800 - (60 * __tn_div) - __tn.second, self.stock_order)
         self.time_backtest.start()
-        line_message(f'BotUpbit \n시작 : {_tn}, \n금액 : {int(self.tot_evl_price)}원, \n종료 : {__tn}, {sel_txt}')
-        
-        
-    def get_balance_code_list(self, obj=False):
-        bal_lst = self.pu.get_balances()
-        o = {}
-        l = []
-        if len(bal_lst) > 0:
-            for i in bal_lst:
-                if i['unit_currency'] + '-' + i['currency'] != 'KRW-KRW':
-                    l.append(i['unit_currency'] + '-' + i['currency'])
-                o[i['unit_currency'] + '-' + i['currency']] = {
-                    'a': float(i['avg_buy_price']),
-                    'b': float(i['balance']),
-                    't': float(i['balance']) * float(i['avg_buy_price']) if (i['unit_currency'] + '-' + i['currency']) != 'KRW-KRW' else float(i['balance'])
-                }
-        return o if obj else l
-        
-    
-    def get_remain_cancel(self, l):
-        for _l in l:
-            rmn_lst = self.pu.get_order(_l)
-            if len(rmn_lst) > 0:
-                for rmn in rmn_lst:
-                    self.pu.cancel_order(rmn['uuid'])
+
+        line_message(f'BotUpbit \nStart : {_tn}, \nEnd : {__tn}, \nTotal Price : {float(self.prc_ttl)} KRW, {sel_txt}')
 
 
 if __name__ == '__main__':
