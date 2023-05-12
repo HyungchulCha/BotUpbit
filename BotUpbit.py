@@ -47,8 +47,10 @@ class BotCoin():
         if self.bool_balance == False:
 
             tn = datetime.datetime.now()
-            tn_div = tn.minute % 30
-            time.sleep(1800 - (60 * tn_div) - tn.second - 90)
+            # tn_div = tn.minute % 30
+            # time.sleep(1800 - (60 * tn_div) - tn.second - 90)
+            tn_div = tn.minute % 5
+            time.sleep(300 - (60 * tn_div) - tn.second - 150)
             self.bool_balance = True
 
         _tn = datetime.datetime.now()
@@ -80,7 +82,8 @@ class BotCoin():
         __tn = datetime.datetime.now()
         tn_diff = (__tn - _tn).seconds
 
-        self.time_rebalance = threading.Timer(1800 - tn_diff - _tn_micro, self.init_per_day)
+        # self.time_rebalance = threading.Timer(1800 - tn_diff - _tn_micro, self.init_per_day)
+        self.time_rebalance = threading.Timer(300 - tn_diff - _tn_micro, self.init_per_day)
         self.time_rebalance.start()
 
 
@@ -165,8 +168,10 @@ class BotCoin():
         if self.bool_order == False:
 
             tn = datetime.datetime.now()
-            tn_div = tn.minute % 30
-            time.sleep(1800 - (60 * tn_div) - tn.second)
+            # tn_div = tn.minute % 30
+            # time.sleep(1800 - (60 * tn_div) - tn.second)
+            tn_div = tn.minute % 5
+            time.sleep(300 - (60 * tn_div) - tn.second)
             self.bool_order = True
 
         _tn = datetime.datetime.now()
@@ -191,7 +196,7 @@ class BotCoin():
             is_symbol_obj = symbol in obj_lst
             is_posble_ord = (self.prc_lmt > self.prc_max)
 
-            df = self.gen_neck_df(self.gen_ubt_df(symbol, '30m', 80))
+            df = self.gen_neck_df(self.gen_ubt_df(symbol, 'minute5', 80))
 
             if not (df is None):
                 
@@ -222,7 +227,7 @@ class BotCoin():
                 if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
 
                     if \
-                    (1.1 < hgt_val < 15) and \
+                    (1.1 < hgt_val < 5) and \
                     (m60_val < m20_val < m05_val < cls_val < clp_val * 1.05) and \
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
@@ -238,11 +243,16 @@ class BotCoin():
 
                 if is_symbol_bal and is_notnul_obj:
 
-                    t1 = 0.035
-                    t2 = 0.045
-                    t3 = 0.055
+                    # t1 = 0.035
+                    # t2 = 0.045
+                    # t3 = 0.055
+                    # ct = 0.8
+                    # hp = 100
+                    t1 = 0.01
+                    t2 = 0.015
+                    t3 = 0.02
                     ct = 0.8
-                    hp = 100
+                    hp = 1.03
 
                     if obj_lst[symbol]['x'] < cur_prc:
                         obj_lst[symbol]['x'] = cur_prc
@@ -359,9 +369,11 @@ class BotCoin():
             sel_txt = sel_txt + '\n' + str(sl['c']) + ' : ' + str(sl['r'])
 
         __tn = datetime.datetime.now()
-        __tn_div = __tn.minute % 30
+        # __tn_div = __tn.minute % 30
+        __tn_div = __tn.minute % 5
 
-        self.time_backtest = threading.Timer(1800 - (60 * __tn_div) - __tn.second, self.stock_order)
+        # self.time_backtest = threading.Timer(1800 - (60 * __tn_div) - __tn.second, self.stock_order)
+        self.time_backtest = threading.Timer(300 - (60 * __tn_div) - __tn.second, self.stock_order)
         self.time_backtest.start()
 
         line_message(f'BotUpbit \nStart : {_tn}, \nEnd : {__tn}, \nTotal Price : {float(self.prc_ttl)} KRW, {sel_txt}')
@@ -378,9 +390,9 @@ if __name__ == '__main__':
         try:
 
             tn = datetime.datetime.now()
-            tn_085825 = tn.replace(hour=8, minute=58, second=25)
+            tn_start = tn.replace(hour=8, minute=58, second=25)
 
-            if tn >= tn_085825 and bc.bool_start == False:
+            if tn >= tn_start and bc.bool_start == False:
                 bc.init_per_day()
                 bc.stock_order()
                 bc.bool_start = True
