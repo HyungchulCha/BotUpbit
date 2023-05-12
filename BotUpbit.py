@@ -240,8 +240,8 @@ class BotCoin():
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
 
                         # self.p_l
-                        self.p_l['sum_pft'] = 0
-                        self.p_l['fst_qty'] = cur_bal
+                        self.p_l[symbol]['sum_pft'] = 0
+                        self.p_l[symbol]['fst_qty'] = cur_bal
 
                         sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})
 
