@@ -219,7 +219,7 @@ class BotCoin():
                     obj_lst.pop(symbol, None)
                     print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
 
-                if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= 10000))):
+                if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
 
                     if \
                     (1.1 < hgt_val < 15) and \
@@ -264,9 +264,9 @@ class BotCoin():
                         ord_rto_02 = (3/8)
                         ord_qty_01 = bal_qty * ord_rto_01
                         ord_qty_02 = bal_qty * ord_rto_02
-                        psb_ord_00 = cur_prc * bal_qty > 5000
-                        psd_ord_01 = cur_prc * ord_qty_01 > 5000
-                        psb_ord_02 = cur_prc * ord_qty_02 > 5000
+                        psb_ord_00 = cur_prc * bal_qty > self.const_dn
+                        psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
+                        psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
                         print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
 
