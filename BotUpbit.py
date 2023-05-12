@@ -224,6 +224,9 @@ class BotCoin():
                     obj_lst.pop(symbol, None)
                     print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
 
+                if is_symbol_bal and self.p_l[symbol]['fst_qty'] == 0:
+                    self.p_l[symbol]['fst_qty'] = copy.deepcopy(bal_lst[symbol]['b'])
+
                 if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
 
                     if \
