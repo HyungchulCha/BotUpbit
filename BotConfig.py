@@ -11,6 +11,7 @@ UB_IP_AWS = '13.125.245.97'
 
 FILE_URL = DIRECTORY + '/Data'
 FILE_URL_BLNC_3M = FILE_URL + '/BalanceList_Coin.pickle'
+FILE_URL_PRFT_3M = FILE_URL + '/ProfitList_Coin.pickle'
 FILE_URL_BACK = DIRECTORY + '/BacktestResult'
 FILE_URL_BLNC_TEST_3M = FILE_URL_BACK + '/BalanceListTest_Coin.pickle'
 

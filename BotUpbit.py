@@ -21,6 +21,8 @@ class BotCoin():
         
         self.q_l = []
         self.b_l = []
+        self.o_l = {}
+        self.p_l = {}
 
         self.time_order = None
         self.time_rebalance = None
@@ -35,6 +37,9 @@ class BotCoin():
 
         self.const_up = 500000000
         self.const_dn = 5000
+
+        self.prc_buy_min = 50000
+        self.prc_buy_max = 5000000
 
     
     def init_per_day(self):
@@ -58,6 +63,17 @@ class BotCoin():
         self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - self.const_up
         prc_max = self.prc_ttl / len(self.q_l)
         self.prc_max = prc_max if prc_max > self.const_dn else self.const_dn
+
+        # self.p_l
+        if os.path.isfile(FILE_URL_PRFT_3M):
+            self.p_l = load_file(FILE_URL_PRFT_3M)
+        else:
+            self.p_l = {}
+            save_file(FILE_URL_PRFT_3M, self.p_l)
+
+        for mk in self.b_l:
+            if not (mk in self.p_l):
+                self.p_l[mk] = {'ttl_pft': 1, 'sum_pft': 0, 'fst_qty': 0}
 
         line_message(f'BotUpbit \nTotal Price : {self.prc_ttl} KRW \nSymbol List : {len(self.b_l)}')
 
@@ -130,6 +146,19 @@ class BotCoin():
                 for rmn in rmn_lst:
                     self.ubt.cancel_order(rmn['uuid'])
 
+    
+    # Set Profit List
+    def set_profit_list(self, symbol, qty, _ror, end=False):
+        pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+        pft_cur = (qty / self.p_l[symbol]['fst_qty']) * _ror
+        self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
+
+        if end:
+            pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
+            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
+            self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
+            self.p_l[symbol]['sum_pft'] = 0
+
 
     def stock_order(self):
 
@@ -177,6 +206,11 @@ class BotCoin():
                 cur_prc = float(cls_val)
                 cur_bal = round((self.prc_max / cur_prc), 4)
 
+                # self.p_l
+                prc_buy = self.p_l[symbol]['ttl_pft'] * self.prc_buy_min
+                prc_buy = self.prc_buy_max if (prc_buy > self.prc_buy_max) else self.prc_buy_min if (prc_buy < self.prc_buy_min) else prc_buy
+                cur_bal = prc_buy / cur_prc
+
                 if is_symbol_bal and (not is_symbol_obj):
                     obj_lst[symbol] = {'x': copy.deepcopy(bal_lst[symbol]['a']), 'a': copy.deepcopy(bal_lst[symbol]['a']), 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                     print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
@@ -192,10 +226,15 @@ class BotCoin():
                     (m60_val < m20_val < m05_val < cls_val < clp_val * 1.05) and \
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
-                        self.ubt.buy_market_order(symbol, self.prc_max)
+                        # self.ubt.buy_market_order(symbol, self.prc_max)
+                        self.ubt.buy_market_order(symbol, prc_buy)
                         print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-                        sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})                    
+
+                        # self.p_l
+                        self.p_l['fst_qty'] = cur_bal
+
+                        sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})
 
                 if is_symbol_bal and is_notnul_obj:
 
@@ -253,6 +292,8 @@ class BotCoin():
 
                                 if bool_01_end:
                                     obj_lst.pop(symbol, None)
+
+                                self.set_profit_list(symbol, qty, _ror, bool_01_end)
                             
                             elif (sel_cnt == 2) and (t2 <= los_dif) and psb_ord_00:
 
@@ -273,6 +314,8 @@ class BotCoin():
                                 if bool_02_end:
                                     obj_lst.pop(symbol, None)
 
+                                self.set_profit_list(symbol, qty, _ror, bool_02_end)
+
                             elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
 
                                 self.ubt.sell_market_order(symbol, bal_qty)
@@ -281,8 +324,9 @@ class BotCoin():
                                 sel_lst.append({'c': '[S3] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
-
                                 obj_lst.pop(symbol, None)
+
+                                self.set_profit_list(symbol, bal_qty, _ror, True)
 
                         elif (hp <= bal_pft) and psb_ord_00:
 
@@ -292,6 +336,8 @@ class BotCoin():
                             sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
+                            self.set_profit_list(symbol, bal_qty, _ror, True)
+
                         elif (bal_pft <= ct) and psb_ord_00:
 
                             self.ubt.sell_market_order(symbol, bal_qty)
@@ -300,7 +346,13 @@ class BotCoin():
                             sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
+                            self.set_profit_list(symbol, bal_qty, _ror, True)
+
+        # self.p_l
         save_file(FILE_URL_BLNC_3M, obj_lst)
+        save_file(FILE_URL_PRFT_3M, self.p_l)
+        print(obj_lst)
+        print(self.p_l)
 
         sel_txt = ''
         for sl in sel_lst:
