@@ -33,12 +33,11 @@ class BotUpbit():
         
         self.prc_ttl = 0
         self.prc_lmt = 0
-        self.prc_max = 0
 
         self.const_up = 500000000
         self.const_dn = 5000
 
-        self.prc_buy_min = 50000
+        self.prc_buy_min = 62500
         self.prc_buy_max = 5000000
 
     
@@ -68,8 +67,6 @@ class BotUpbit():
         self.b_l = list(set(self.q_l + bal_lst))
         self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
         self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - self.const_up
-        prc_max = self.prc_ttl / len(self.q_l)
-        self.prc_max = prc_max if prc_max > self.const_dn else self.const_dn
 
         if os.path.isfile(FILE_URL_PRFT_3M):
             self.p_l = load_file(FILE_URL_PRFT_3M)
@@ -121,7 +118,6 @@ class BotUpbit():
             is_notnul_obj = not (not obj_lst)
             is_symbol_bal = symbol in bal_lst
             is_symbol_obj = symbol in obj_lst
-            is_posble_ord = (self.prc_lmt > self.prc_max)
 
             df = self.gen_neck_df(self.gen_ubt_df(symbol, 'minute5', 80))
 
@@ -139,6 +135,7 @@ class BotUpbit():
                 prc_buy = self.p_l[symbol]['ttl_pft'] * self.prc_buy_min
                 prc_buy = self.prc_buy_max if (prc_buy > self.prc_buy_max) else self.prc_buy_min if (prc_buy < self.prc_buy_min) else prc_buy
                 cur_bal = prc_buy / cur_prc
+                is_posble_ord = self.prc_lmt > prc_buy
 
                 if is_symbol_bal and (not is_symbol_obj):
                     obj_lst[symbol] = {'x': copy.deepcopy(bal_lst[symbol]['a']), 'a': copy.deepcopy(bal_lst[symbol]['a']), 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
@@ -160,7 +157,6 @@ class BotUpbit():
                     (m60_val < m20_val < m05_val < cls_val < clp_val * 1.05) and \
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
-                        # self.ubt.buy_market_order(symbol, self.prc_max)
                         resp = self.ubt.buy_market_order(symbol, prc_buy)
                         print(resp)
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
