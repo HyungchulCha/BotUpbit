@@ -14,7 +14,7 @@ class BotCoin():
 
     def __init__(self):
 
-        self.is_aws = False
+        self.is_aws = True
         self.access_key = UB_ACCESS_KEY_AWS if self.is_aws else UB_ACCESS_KEY_NAJU
         self.secret_key = UB_SECRET_KEY_AWS if self.is_aws else UB_SECRET_KEY_NAJU
         self.ubt = pyupbit.Upbit(self.access_key, self.secret_key)
@@ -86,7 +86,6 @@ class BotCoin():
         __tn = datetime.datetime.now()
         tn_diff = (__tn - _tn).seconds
 
-        # self.time_rebalance = threading.Timer(1800 - tn_diff - _tn_micro, self.init_per_day)
         self.time_rebalance = threading.Timer(300 - tn_diff - _tn_micro, self.init_per_day)
         self.time_rebalance.start()
 
@@ -381,23 +380,23 @@ class BotCoin():
 if __name__ == '__main__':
 
     bc = BotCoin()
-    # bc.init_per_day()
-    # bc.stock_order()
+    bc.init_per_day()
+    bc.stock_order()
 
-    while True:
+    # while True:
 
-        try:
+    #     try:
 
-            tn = datetime.datetime.now()
-            tn_start = tn.replace(hour=8, minute=58, second=25)
+    #         tn = datetime.datetime.now()
+    #         tn_start = tn.replace(hour=8, minute=58, second=25)
 
-            if tn >= tn_start and bc.bool_start == False:
-                bc.init_per_day()
-                bc.stock_order()
-                bc.bool_start = True
+    #         if tn >= tn_start and bc.bool_start == False:
+    #             bc.init_per_day()
+    #             bc.stock_order()
+    #             bc.bool_start = True
 
-        except Exception as e:
+    #     except Exception as e:
 
-            line_message(f"BotUpbit Error : {e}")
-            break
+    #         line_message(f"BotUpbit Error : {e}")
+    #         break
 
