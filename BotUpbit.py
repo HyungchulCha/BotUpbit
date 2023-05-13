@@ -14,7 +14,7 @@ class BotCoin():
 
     def __init__(self):
 
-        self.is_aws = True
+        self.is_aws = False
         self.access_key = UB_ACCESS_KEY_AWS if self.is_aws else UB_ACCESS_KEY_NAJU
         self.secret_key = UB_SECRET_KEY_AWS if self.is_aws else UB_SECRET_KEY_NAJU
         self.ubt = pyupbit.Upbit(self.access_key, self.secret_key)
@@ -47,10 +47,15 @@ class BotCoin():
         if self.bool_balance == False:
 
             tn = datetime.datetime.now()
-            # tn_div = tn.minute % 30
-            # time.sleep(1800 - (60 * tn_div) - tn.second - 90)
-            tn_div = tn.minute % 5
-            time.sleep(300 - (60 * tn_div) - tn.second - 150)
+            tn_0 = tn.replace(hour=0, minute=0, second=0)
+            tn_d = int(((tn - tn_0).seconds) % 300)
+            print(tn_d)
+
+            if tn_d <= 150:
+                time.sleep(300 - tn_d - 150)
+            else:
+                time.sleep(300 - tn_d + 150)
+
             self.bool_balance = True
 
         _tn = datetime.datetime.now()
@@ -66,7 +71,6 @@ class BotCoin():
         prc_max = self.prc_ttl / len(self.q_l)
         self.prc_max = prc_max if prc_max > self.const_dn else self.const_dn
 
-        # self.p_l
         if os.path.isfile(FILE_URL_PRFT_3M):
             self.p_l = load_file(FILE_URL_PRFT_3M)
         else:
@@ -85,6 +89,215 @@ class BotCoin():
         # self.time_rebalance = threading.Timer(1800 - tn_diff - _tn_micro, self.init_per_day)
         self.time_rebalance = threading.Timer(300 - tn_diff - _tn_micro, self.init_per_day)
         self.time_rebalance.start()
+
+
+    def stock_order(self):
+
+        if self.bool_order == False:
+
+            tn = datetime.datetime.now()
+            tn_0 = tn.replace(hour=0, minute=0, second=0)
+            tn_d = int(((tn - tn_0).seconds) % 300)
+            time.sleep(300 - tn_d)
+            self.bool_order = True
+
+        _tn = datetime.datetime.now()
+        _tn_ms = _tn.microsecond / 1000000
+
+        print('##################################################')
+
+        self.get_remain_cancel(self.b_l)
+
+        _, _, bal_lst, _ = self.get_balance_info(self.q_l)
+        sel_lst = []
+
+        if os.path.isfile(FILE_URL_BLNC_3M):
+            obj_lst = load_file(FILE_URL_BLNC_3M)
+        else:
+            obj_lst = {}
+            save_file(FILE_URL_BLNC_3M, obj_lst)
+
+        for symbol in self.b_l:
+
+            is_notnul_obj = not (not obj_lst)
+            is_symbol_bal = symbol in bal_lst
+            is_symbol_obj = symbol in obj_lst
+            is_posble_ord = (self.prc_lmt > self.prc_max)
+
+            df = self.gen_neck_df(self.gen_ubt_df(symbol, 'minute5', 80))
+
+            if not (df is None):
+                
+                df_head = df.tail(2).head(1)
+                cls_val = df_head['close'].iloc[-1]
+                clp_val = df_head['close_prev'].iloc[-1]
+                hgt_val = df_head['height_5_20'].iloc[-1]
+                m05_val = df_head['ma05'].iloc[-1]
+                m20_val = df_head['ma20'].iloc[-1]
+                m60_val = df_head['ma60'].iloc[-1]
+
+                cur_prc = float(cls_val)
+                prc_buy = self.p_l[symbol]['ttl_pft'] * self.prc_buy_min
+                prc_buy = self.prc_buy_max if (prc_buy > self.prc_buy_max) else self.prc_buy_min if (prc_buy < self.prc_buy_min) else prc_buy
+                cur_bal = prc_buy / cur_prc
+
+                if is_symbol_bal and (not is_symbol_obj):
+                    obj_lst[symbol] = {'x': copy.deepcopy(bal_lst[symbol]['a']), 'a': copy.deepcopy(bal_lst[symbol]['a']), 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+                    print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
+                
+                if (not is_symbol_bal) and is_symbol_obj:
+                    obj_lst.pop(symbol, None)
+                    print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
+
+                if is_symbol_bal and ((self.p_l[symbol]['fst_qty'] == 0) or (cur_prc * bal_lst[symbol]['b'] <= self.const_dn)):
+                    self.p_l[symbol]['fst_qty'] = copy.deepcopy(bal_lst[symbol]['b'])
+                    self.p_l[symbol]['sum_pft'] = 0
+                    print(f'{symbol} : Insert Quantity, Pft[X], Bal[O] !!!')
+
+                if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
+
+                    if \
+                    (1.1 < hgt_val < 5) and \
+                    (m60_val < m20_val < m05_val < cls_val < clp_val * 1.05) and \
+                    (m20_val < cls_val < m20_val * 1.05) \
+                    :
+                        # self.ubt.buy_market_order(symbol, self.prc_max)
+                        resp = self.ubt.buy_market_order(symbol, prc_buy)
+                        print(resp)
+                        obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+                        self.p_l[symbol]['fst_qty'] = cur_bal
+                        self.p_l[symbol]['sum_pft'] = 0
+                        print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
+                        sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})
+
+                if is_symbol_bal and is_notnul_obj:
+                    
+                    t1 = 0.01
+                    t2 = 0.015
+                    t3 = 0.02
+                    ct = 0.8
+                    hp = 1.03
+
+                    if obj_lst[symbol]['x'] < cur_prc:
+                        obj_lst[symbol]['x'] = cur_prc
+                        obj_lst[symbol]['a'] = copy.deepcopy(bal_lst[symbol]['a'])
+                        obj_fst = copy.deepcopy(obj_lst[symbol]['a'])
+                        bal_pft = ror(obj_fst, cur_prc)
+
+                        print(f'{symbol} : Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}, Increase !!!')
+
+                    if obj_lst[symbol]['x'] > cur_prc:
+                        
+                        bal_fst = copy.deepcopy(bal_lst[symbol]['a'])
+                        obj_max = copy.deepcopy(obj_lst[symbol]['x'])
+                        obj_pft = ror(bal_fst, obj_max)
+                        bal_pft = ror(bal_fst, cur_prc)
+                        los_dif = obj_pft - bal_pft
+                        sel_cnt = copy.deepcopy(obj_lst[symbol]['s'])
+
+                        ord_qty_00 = copy.deepcopy(bal_lst[symbol]['b'])
+                        ord_qty_01 = ord_qty_00 * 0.3
+                        ord_qty_02 = ord_qty_00 * 0.5
+                        psb_ord_00 = cur_prc * ord_qty_00 > self.const_dn
+                        psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
+                        psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
+
+                        print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
+
+                        if 1 < bal_pft < hp:
+
+                            if (sel_cnt == 1) and (t1 <= los_dif) and psb_ord_00:
+
+                                bool_01_end = False
+                                if psd_ord_01:
+                                    qty = ord_qty_01
+                                elif psb_ord_02:
+                                    qty = ord_qty_02
+                                else:
+                                    qty = ord_qty_00
+                                    bool_01_end = True
+
+                                self.ubt.sell_market_order(symbol, qty)
+                                _ror = ror(bal_fst * qty, cur_prc * qty)
+                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                                sel_lst.append({'c': '[S1] ' + symbol, 'r': round(_ror, 4)})
+                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
+                                obj_lst[symbol]['s'] = sel_cnt + 1
+
+                                if bool_01_end:
+                                    obj_lst.pop(symbol, None)
+
+                                self.set_profit_list(symbol, qty, _ror, bool_01_end)
+                            
+                            elif (sel_cnt == 2) and (t2 <= los_dif) and psb_ord_00:
+
+                                bool_02_end = False
+                                if psb_ord_02:
+                                    qty = ord_qty_02
+                                else:
+                                    qty = ord_qty_00
+                                    bool_02_end = True
+
+                                self.ubt.sell_market_order(symbol, qty)
+                                _ror = ror(bal_fst * qty, cur_prc * qty)
+                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                                sel_lst.append({'c': '[S2] ' + symbol, 'r': round(_ror, 4)})
+                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
+                                obj_lst[symbol]['s'] = sel_cnt + 1
+
+                                if bool_02_end:
+                                    obj_lst.pop(symbol, None)
+
+                                self.set_profit_list(symbol, qty, _ror, bool_02_end)
+
+                            elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
+
+                                self.ubt.sell_market_order(symbol, ord_qty_00)
+                                _ror = ror(bal_fst * ord_qty_00, cur_prc * ord_qty_00)
+                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                                sel_lst.append({'c': '[S3] ' + symbol, 'r': round(_ror, 4)})
+                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
+                                obj_lst[symbol]['s'] = sel_cnt + 1
+                                obj_lst.pop(symbol, None)
+
+                                self.set_profit_list(symbol, ord_qty_00, _ror, True)
+
+                        elif (hp <= bal_pft) and psb_ord_00:
+
+                            self.ubt.sell_market_order(symbol, ord_qty_00)
+                            _ror = ror(bal_fst * ord_qty_00, cur_prc * ord_qty_00)
+                            print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                            sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
+                            obj_lst.pop(symbol, None)
+
+                            self.set_profit_list(symbol, ord_qty_00, _ror, True)
+
+                        elif (bal_pft <= ct) and psb_ord_00:
+
+                            self.ubt.sell_market_order(symbol, ord_qty_00)
+                            _ror = ror(bal_fst * ord_qty_00, cur_prc * ord_qty_00)
+                            print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                            sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
+                            obj_lst.pop(symbol, None)
+
+                            self.set_profit_list(symbol, ord_qty_00, _ror, True)
+
+        # self.p_l
+        save_file(FILE_URL_BLNC_3M, obj_lst)
+        save_file(FILE_URL_PRFT_3M, self.p_l)
+        print(self.p_l)
+
+        sel_txt = ''
+        for sl in sel_lst:
+            sel_txt = sel_txt + '\n' + str(sl['c']) + ' : ' + str(sl['r'])
+
+        __tn = datetime.datetime.now()
+        tn_diff = (__tn - _tn).seconds
+
+        self.time_backtest = threading.Timer(300 - tn_diff - _tn_ms, self.stock_order)
+        self.time_backtest.start()
+
+        line_message(f'BotUpbit \nStart : {_tn}, \nEnd : {__tn}, \nTotal Price : {float(self.prc_ttl)} KRW, {sel_txt}')
 
 
     # Generate Neck Dataframe
@@ -162,225 +375,7 @@ class BotCoin():
             self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
             self.p_l[symbol]['sum_pft'] = 0
 
-
-    def stock_order(self):
-
-        if self.bool_order == False:
-
-            tn = datetime.datetime.now()
-            # tn_div = tn.minute % 30
-            # time.sleep(1800 - (60 * tn_div) - tn.second)
-            tn_div = tn.minute % 5
-            time.sleep(300 - (60 * tn_div) - tn.second)
-            self.bool_order = True
-
-        _tn = datetime.datetime.now()
-
-        print('##################################################')
-
-        self.get_remain_cancel(self.b_l)
-
-        _, _, bal_lst, _ = self.get_balance_info(self.q_l)
-        sel_lst = []
-
-        if os.path.isfile(FILE_URL_BLNC_3M):
-            obj_lst = load_file(FILE_URL_BLNC_3M)
-        else:
-            obj_lst = {}
-            save_file(FILE_URL_BLNC_3M, obj_lst)
-
-        for symbol in self.b_l:
-
-            is_notnul_obj = not (not obj_lst)
-            is_symbol_bal = symbol in bal_lst
-            is_symbol_obj = symbol in obj_lst
-            is_posble_ord = (self.prc_lmt > self.prc_max)
-
-            df = self.gen_neck_df(self.gen_ubt_df(symbol, 'minute5', 80))
-
-            if not (df is None):
-                
-                df_head = df.tail(2).head(1)
-                cls_val = df_head['close'].iloc[-1]
-                clp_val = df_head['close_prev'].iloc[-1]
-                hgt_val = df_head['height_5_20'].iloc[-1]
-                m05_val = df_head['ma05'].iloc[-1]
-                m20_val = df_head['ma20'].iloc[-1]
-                m60_val = df_head['ma60'].iloc[-1]
-
-                cur_prc = float(cls_val)
-                cur_bal = round((self.prc_max / cur_prc), 4)
-
-                # self.p_l
-                prc_buy = self.p_l[symbol]['ttl_pft'] * self.prc_buy_min
-                prc_buy = self.prc_buy_max if (prc_buy > self.prc_buy_max) else self.prc_buy_min if (prc_buy < self.prc_buy_min) else prc_buy
-                cur_bal = prc_buy / cur_prc
-
-                if is_symbol_bal and (not is_symbol_obj):
-                    obj_lst[symbol] = {'x': copy.deepcopy(bal_lst[symbol]['a']), 'a': copy.deepcopy(bal_lst[symbol]['a']), 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-                    print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
-                
-                if (not is_symbol_bal) and is_symbol_obj:
-                    obj_lst.pop(symbol, None)
-                    print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
-
-                if is_symbol_bal and self.p_l[symbol]['fst_qty'] == 0:
-                    self.p_l[symbol]['fst_qty'] = copy.deepcopy(bal_lst[symbol]['b'])
-
-                if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
-
-                    if \
-                    (1.1 < hgt_val < 5) and \
-                    (m60_val < m20_val < m05_val < cls_val < clp_val * 1.05) and \
-                    (m20_val < cls_val < m20_val * 1.05) \
-                    :
-                        # self.ubt.buy_market_order(symbol, self.prc_max)
-                        self.ubt.buy_market_order(symbol, prc_buy)
-                        print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
-                        obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-
-                        # self.p_l
-                        self.p_l[symbol]['sum_pft'] = 0
-                        self.p_l[symbol]['fst_qty'] = cur_bal
-
-                        sel_lst.append({'c': '[B] ' + symbol, 'r': cur_bal})
-
-                if is_symbol_bal and is_notnul_obj:
-
-                    # t1 = 0.035
-                    # t2 = 0.045
-                    # t3 = 0.055
-                    # ct = 0.8
-                    # hp = 100
-                    t1 = 0.01
-                    t2 = 0.015
-                    t3 = 0.02
-                    ct = 0.8
-                    hp = 1.03
-
-                    if obj_lst[symbol]['x'] < cur_prc:
-                        obj_lst[symbol]['x'] = cur_prc
-                        obj_lst[symbol]['a'] = copy.deepcopy(bal_lst[symbol]['a'])
-
-                        print(f'{symbol} : Current Price {cur_prc}, Increase !!!')
-
-                    if obj_lst[symbol]['x'] > cur_prc:
-                        
-                        bal_fst = bal_lst[symbol]['a']
-                        bal_qty = bal_lst[symbol]['b']
-                        obj_max = obj_lst[symbol]['x']
-                        obj_pft = ror(bal_fst, obj_max)
-                        bal_pft = ror(bal_fst, cur_prc)
-                        los_dif = obj_pft - bal_pft
-                        sel_cnt = copy.deepcopy(obj_lst[symbol]['s'])
-
-                        ord_rto_01 = 0.2
-                        ord_rto_02 = (3/8)
-                        ord_qty_01 = bal_qty * ord_rto_01
-                        ord_qty_02 = bal_qty * ord_rto_02
-                        psb_ord_00 = cur_prc * bal_qty > self.const_dn
-                        psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
-                        psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
-
-                        print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
-
-                        if 1 < bal_pft < hp:
-
-                            if (sel_cnt == 1) and (t1 <= los_dif) and psb_ord_00:
-
-                                bool_01_end = False
-                                if psd_ord_01:
-                                    qty = ord_qty_01
-                                elif psb_ord_02:
-                                    qty = ord_qty_02
-                                else:
-                                    qty = bal_qty
-                                    bool_01_end = True
-
-                                self.ubt.sell_market_order(symbol, qty)
-                                _ror = ror(bal_fst * qty, cur_prc * qty)
-                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[S1] ' + symbol, 'r': round(_ror, 4)})
-                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
-                                obj_lst[symbol]['s'] = sel_cnt + 1
-
-                                if bool_01_end:
-                                    obj_lst.pop(symbol, None)
-
-                                self.set_profit_list(symbol, qty, _ror, bool_01_end)
-                            
-                            elif (sel_cnt == 2) and (t2 <= los_dif) and psb_ord_00:
-
-                                bool_02_end = False
-                                if psb_ord_02:
-                                    qty = ord_qty_02
-                                else:
-                                    qty = bal_qty
-                                    bool_02_end = True
-
-                                self.ubt.sell_market_order(symbol, qty)
-                                _ror = ror(bal_fst * qty, cur_prc * qty)
-                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[S2] ' + symbol, 'r': round(_ror, 4)})
-                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
-                                obj_lst[symbol]['s'] = sel_cnt + 1
-
-                                if bool_02_end:
-                                    obj_lst.pop(symbol, None)
-
-                                self.set_profit_list(symbol, qty, _ror, bool_02_end)
-
-                            elif (sel_cnt == 3) and (t3 <= los_dif) and psb_ord_00:
-
-                                self.ubt.sell_market_order(symbol, bal_qty)
-                                _ror = ror(bal_fst * bal_qty, cur_prc * bal_qty)
-                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[S3] ' + symbol, 'r': round(_ror, 4)})
-                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
-                                obj_lst[symbol]['s'] = sel_cnt + 1
-                                obj_lst.pop(symbol, None)
-
-                                self.set_profit_list(symbol, bal_qty, _ror, True)
-
-                        elif (hp <= bal_pft) and psb_ord_00:
-
-                            self.ubt.sell_market_order(symbol, bal_qty)
-                            _ror = ror(bal_fst * bal_qty, cur_prc * bal_qty)
-                            print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                            sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
-                            obj_lst.pop(symbol, None)
-
-                            self.set_profit_list(symbol, bal_qty, _ror, True)
-
-                        elif (bal_pft <= ct) and psb_ord_00:
-
-                            self.ubt.sell_market_order(symbol, bal_qty)
-                            _ror = ror(bal_fst * bal_qty, cur_prc * bal_qty)
-                            print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                            sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
-                            obj_lst.pop(symbol, None)
-
-                            self.set_profit_list(symbol, bal_qty, _ror, True)
-
-        # self.p_l
-        save_file(FILE_URL_BLNC_3M, obj_lst)
-        save_file(FILE_URL_PRFT_3M, self.p_l)
-        print(obj_lst)
-        print(self.p_l)
-
-        sel_txt = ''
-        for sl in sel_lst:
-            sel_txt = sel_txt + '\n' + str(sl['c']) + ' : ' + str(sl['r'])
-
-        __tn = datetime.datetime.now()
-        # __tn_div = __tn.minute % 30
-        __tn_div = __tn.minute % 5
-
-        # self.time_backtest = threading.Timer(1800 - (60 * __tn_div) - __tn.second, self.stock_order)
-        self.time_backtest = threading.Timer(300 - (60 * __tn_div) - __tn.second, self.stock_order)
-        self.time_backtest.start()
-
-        line_message(f'BotUpbit \nStart : {_tn}, \nEnd : {__tn}, \nTotal Price : {float(self.prc_ttl)} KRW, {sel_txt}')
+            print(self.p_l[symbol]['ttl_pft'])
 
 
 if __name__ == '__main__':
