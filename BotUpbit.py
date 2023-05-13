@@ -50,15 +50,16 @@ class BotUpbit():
             tn_d = int(((tn - tn_0).seconds) % 300)
             print(tn_d)
 
-            if tn_d <= 150:
-                time.sleep(300 - tn_d - 150)
-            else:
-                time.sleep(300 - tn_d + 150)
+            # if tn_d <= 150:
+            #     time.sleep(300 - tn_d - 150)
+            # else:
+            #     time.sleep(300 - tn_d + 150)
 
             self.bool_balance = True
 
-        _tn = datetime.datetime.now()
-        _tn_micro = _tn.microsecond / 1000000
+        # _tn = datetime.datetime.now()
+
+        print('##################################################')
 
         self.ubt = pyupbit.Upbit(self.access_key, self.secret_key)
 
@@ -81,9 +82,10 @@ class BotUpbit():
         line_message(f'BotUpbit \nTotal Price : {self.prc_ttl} KRW \nSymbol List : {len(self.b_l)}')
 
         __tn = datetime.datetime.now()
-        tn_diff = (__tn - _tn).seconds
+        __tn_min = __tn.minute % 5
+        __tn_sec = __tn.second
 
-        self.time_rebalance = threading.Timer(300 - tn_diff - _tn_micro, self.init_per_day)
+        self.time_rebalance = threading.Timer(300 - (60 * __tn_min) - __tn_sec + 150, self.init_per_day)
         self.time_rebalance.start()
 
 
@@ -98,11 +100,8 @@ class BotUpbit():
             self.bool_order = True
 
         _tn = datetime.datetime.now()
-        _tn_ms = _tn.microsecond / 1000000
 
-        print('##################################################')
-
-        self.get_remain_cancel(self.b_l)
+        # self.get_remain_cancel(self.b_l)
 
         _, _, bal_lst, _ = self.get_balance_info(self.q_l)
         sel_lst = []
@@ -139,16 +138,16 @@ class BotUpbit():
 
                 if is_symbol_bal and (not is_symbol_obj):
                     obj_lst[symbol] = {'x': copy.deepcopy(bal_lst[symbol]['a']), 'a': copy.deepcopy(bal_lst[symbol]['a']), 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-                    print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
+                    # print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
                 
                 if (not is_symbol_bal) and is_symbol_obj:
                     obj_lst.pop(symbol, None)
-                    print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
+                    # print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
 
                 if is_symbol_bal and ((self.p_l[symbol]['fst_qty'] == 0) or (cur_prc * bal_lst[symbol]['b'] <= self.const_dn)):
                     self.p_l[symbol]['fst_qty'] = copy.deepcopy(bal_lst[symbol]['b'])
                     self.p_l[symbol]['sum_pft'] = 0
-                    print(f'{symbol} : Insert Quantity, Pft[X], Bal[O] !!!')
+                    # print(f'{symbol} : Insert Quantity, Pft[X], Bal[O] !!!')
 
                 if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
 
@@ -158,7 +157,7 @@ class BotUpbit():
                     (m20_val < cls_val < m20_val * 1.05) \
                     :
                         resp = self.ubt.buy_market_order(symbol, prc_buy)
-                        print(resp)
+                        # print(resp)
                         obj_lst[symbol] = {'a': cur_prc, 'x': cur_prc, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                         self.p_l[symbol]['fst_qty'] = cur_bal
                         self.p_l[symbol]['sum_pft'] = 0
@@ -193,7 +192,7 @@ class BotUpbit():
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        print(f'{symbol} : Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}, Increase !!!')
+                        # print(f'{symbol} : Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}, Increase !!!')
 
                         if 1 < bal_pft < hp:
 
@@ -279,7 +278,7 @@ class BotUpbit():
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
+                        # print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
 
                         if 1 < bal_pft < hp:
 
@@ -361,16 +360,17 @@ class BotUpbit():
 
         save_file(FILE_URL_BLNC_3M, obj_lst)
         save_file(FILE_URL_PRFT_3M, self.p_l)
-        print(self.p_l)
+        # print(self.p_l)
 
         sel_txt = ''
         for sl in sel_lst:
             sel_txt = sel_txt + '\n' + str(sl['c']) + ' : ' + str(sl['r'])
 
         __tn = datetime.datetime.now()
-        tn_diff = (__tn - _tn).seconds
+        __tn_min = __tn.minute % 5
+        __tn_sec = __tn.second
 
-        self.time_backtest = threading.Timer(300 - tn_diff - _tn_ms, self.stock_order)
+        self.time_backtest = threading.Timer(300 - (60 * __tn_min) - __tn_sec, self.stock_order)
         self.time_backtest.start()
 
         line_message(f'BotUpbit \nStart : {_tn}, \nEnd : {__tn}, \nTotal Price : {float(self.prc_ttl)} KRW, {sel_txt}')
@@ -469,24 +469,24 @@ class BotUpbit():
 if __name__ == '__main__':
 
     bu = BotUpbit()
-    # bu.init_per_day()
+    bu.init_per_day()
     # bu.stock_order()
-    # bu.all_sell_order()
+    bu.all_sell_order()
 
-    while True:
+    # while True:
 
-        try:
+    #     try:
 
-            tn = datetime.datetime.now()
-            tn_start = tn.replace(hour=8, minute=58, second=25)
+    #         tn = datetime.datetime.now()
+    #         tn_start = tn.replace(hour=8, minute=58, second=25)
 
-            if tn >= tn_start and bu.bool_start == False:
-                bu.init_per_day()
-                bu.stock_order()
-                bu.bool_start = True
+    #         if tn >= tn_start and bu.bool_start == False:
+    #             bu.init_per_day()
+    #             bu.stock_order()
+    #             bu.bool_start = True
 
-        except Exception as e:
+    #     except Exception as e:
 
-            line_message(f"BotUpbit Error : {e}")
-            break
+    #         line_message(f"BotUpbit Error : {e}")
+    #         break
 
