@@ -281,7 +281,6 @@ class BotCoin():
 
                             self.set_profit_list(symbol, ord_qty_00, _ror, True)
 
-        # self.p_l
         save_file(FILE_URL_BLNC_3M, obj_lst)
         save_file(FILE_URL_PRFT_3M, self.p_l)
         print(self.p_l)
@@ -380,23 +379,23 @@ class BotCoin():
 if __name__ == '__main__':
 
     bc = BotCoin()
-    bc.init_per_day()
-    bc.stock_order()
+    # bc.init_per_day()
+    # bc.stock_order()
 
-    # while True:
+    while True:
 
-    #     try:
+        try:
 
-    #         tn = datetime.datetime.now()
-    #         tn_start = tn.replace(hour=8, minute=58, second=25)
+            tn = datetime.datetime.now()
+            tn_start = tn.replace(hour=8, minute=58, second=25)
 
-    #         if tn >= tn_start and bc.bool_start == False:
-    #             bc.init_per_day()
-    #             bc.stock_order()
-    #             bc.bool_start = True
+            if tn >= tn_start and bc.bool_start == False:
+                bc.init_per_day()
+                bc.stock_order()
+                bc.bool_start = True
 
-    #     except Exception as e:
+        except Exception as e:
 
-    #         line_message(f"BotUpbit Error : {e}")
-    #         break
+            line_message(f"BotUpbit Error : {e}")
+            break
 
