@@ -129,7 +129,7 @@ def rsi_vol_zremove(df, code):
     return rsi
 
 
-def ror(pv, nv, pr=1, pf=0.0005, spf=0):
+def ror(pv, nv, pr=1, pf=0.00075, spf=0):
     cr = ((nv - (nv * pf) - (nv * spf)) / (pv + (pv * pf)))
     return pr * cr
 
