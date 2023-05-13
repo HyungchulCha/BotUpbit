@@ -50,10 +50,10 @@ class BotUpbit():
             tn_d = int(((tn - tn_0).seconds) % 300)
             print(tn_d)
 
-            # if tn_d <= 150:
-            #     time.sleep(300 - tn_d - 150)
-            # else:
-            #     time.sleep(300 - tn_d + 150)
+            if tn_d <= 150:
+                time.sleep(300 - tn_d - 150)
+            else:
+                time.sleep(300 - tn_d + 150)
 
             self.bool_balance = True
 
@@ -469,24 +469,24 @@ class BotUpbit():
 if __name__ == '__main__':
 
     bu = BotUpbit()
-    bu.init_per_day()
+    # bu.init_per_day()
     # bu.stock_order()
-    bu.all_sell_order()
+    # bu.all_sell_order()
 
-    # while True:
+    while True:
 
-    #     try:
+        try:
 
-    #         tn = datetime.datetime.now()
-    #         tn_start = tn.replace(hour=8, minute=58, second=25)
+            tn = datetime.datetime.now()
+            tn_start = tn.replace(hour=8, minute=58, second=25)
 
-    #         if tn >= tn_start and bu.bool_start == False:
-    #             bu.init_per_day()
-    #             bu.stock_order()
-    #             bu.bool_start = True
+            if tn >= tn_start and bu.bool_start == False:
+                bu.init_per_day()
+                bu.stock_order()
+                bu.bool_start = True
 
-    #     except Exception as e:
+        except Exception as e:
 
-    #         line_message(f"BotUpbit Error : {e}")
-    #         break
+            line_message(f"BotUpbit Error : {e}")
+            break
 
