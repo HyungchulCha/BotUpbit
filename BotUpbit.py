@@ -9,7 +9,7 @@ import datetime
 import os
 import copy
 
-class BotCoin():
+class BotUpbit():
 
 
     def __init__(self):
@@ -174,18 +174,100 @@ class BotCoin():
                     t1 = 0.01
                     t2 = 0.015
                     t3 = 0.02
-                    ct = 0.8
-                    hp = 1.03
+                    h1 = 0.035
+                    h2 = 0.04
+                    h3 = 0.045
+                    ct = 0.975
+                    hp = 1.05
 
                     if obj_lst[symbol]['x'] < cur_prc:
+
                         obj_lst[symbol]['x'] = cur_prc
-                        obj_lst[symbol]['a'] = copy.deepcopy(bal_lst[symbol]['a'])
-                        obj_fst = copy.deepcopy(obj_lst[symbol]['a'])
-                        bal_pft = ror(obj_fst, cur_prc)
+                        
+                        bal_fst = copy.deepcopy(bal_lst[symbol]['a'])
+                        obj_max = copy.deepcopy(obj_lst[symbol]['x'])
+                        sel_cnt = copy.deepcopy(obj_lst[symbol]['s'])
+                        obj_pft = ror(bal_fst, obj_max)
+                        bal_pft = ror(bal_fst, cur_prc)
+
+                        ord_qty_00 = copy.deepcopy(bal_lst[symbol]['b'])
+                        ord_qty_01 = ord_qty_00 * 0.3
+                        ord_qty_02 = ord_qty_00 * 0.5
+                        psb_ord_00 = cur_prc * ord_qty_00 > self.const_dn
+                        psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
+                        psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
                         print(f'{symbol} : Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}, Increase !!!')
 
-                    if obj_lst[symbol]['x'] > cur_prc:
+                        if 1 < bal_pft < hp:
+
+                            if (sel_cnt == 1) and (h1 <= bal_pft) and psb_ord_00:
+
+                                bool_01_end = False
+                                if psd_ord_01:
+                                    qty = ord_qty_01
+                                elif psb_ord_02:
+                                    qty = ord_qty_02
+                                else:
+                                    qty = ord_qty_00
+                                    bool_01_end = True
+
+                                self.ubt.sell_market_order(symbol, qty)
+                                _ror = ror(bal_fst * qty, cur_prc * qty)
+                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                                sel_lst.append({'c': '[SH1] ' + symbol, 'r': round(_ror, 4)})
+                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
+                                obj_lst[symbol]['s'] = sel_cnt + 1
+
+                                if bool_01_end:
+                                    obj_lst.pop(symbol, None)
+
+                                self.set_profit_list(symbol, qty, _ror, bool_01_end)
+                            
+                            elif (sel_cnt == 2) and (h2 <= bal_pft) and psb_ord_00:
+
+                                bool_02_end = False
+                                if psb_ord_02:
+                                    qty = ord_qty_02
+                                else:
+                                    qty = ord_qty_00
+                                    bool_02_end = True
+
+                                self.ubt.sell_market_order(symbol, qty)
+                                _ror = ror(bal_fst * qty, cur_prc * qty)
+                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                                sel_lst.append({'c': '[SH2] ' + symbol, 'r': round(_ror, 4)})
+                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
+                                obj_lst[symbol]['s'] = sel_cnt + 1
+
+                                if bool_02_end:
+                                    obj_lst.pop(symbol, None)
+
+                                self.set_profit_list(symbol, qty, _ror, bool_02_end)
+
+                            elif (sel_cnt == 3) and (h3 <= bal_pft) and psb_ord_00:
+
+                                self.ubt.sell_market_order(symbol, ord_qty_00)
+                                _ror = ror(bal_fst * ord_qty_00, cur_prc * ord_qty_00)
+                                print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                                sel_lst.append({'c': '[SH3] ' + symbol, 'r': round(_ror, 4)})
+                                obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
+                                obj_lst[symbol]['s'] = sel_cnt + 1
+                                obj_lst.pop(symbol, None)
+
+                                self.set_profit_list(symbol, ord_qty_00, _ror, True)
+
+                        elif (hp <= bal_pft) and psb_ord_00:
+
+                            self.ubt.sell_market_order(symbol, ord_qty_00)
+                            _ror = ror(bal_fst * ord_qty_00, cur_prc * ord_qty_00)
+                            print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
+                            sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
+                            obj_lst.pop(symbol, None)
+
+                            self.set_profit_list(symbol, ord_qty_00, _ror, True)
+
+                    elif obj_lst[symbol]['x'] > cur_prc:
                         
                         bal_fst = copy.deepcopy(bal_lst[symbol]['a'])
                         obj_max = copy.deepcopy(obj_lst[symbol]['x'])
@@ -219,7 +301,7 @@ class BotCoin():
                                 self.ubt.sell_market_order(symbol, qty)
                                 _ror = ror(bal_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[S1] ' + symbol, 'r': round(_ror, 4)})
+                                sel_lst.append({'c': '[ST1] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
 
@@ -240,7 +322,7 @@ class BotCoin():
                                 self.ubt.sell_market_order(symbol, qty)
                                 _ror = ror(bal_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[S2] ' + symbol, 'r': round(_ror, 4)})
+                                sel_lst.append({'c': '[ST2] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
 
@@ -254,7 +336,7 @@ class BotCoin():
                                 self.ubt.sell_market_order(symbol, ord_qty_00)
                                 _ror = ror(bal_fst * ord_qty_00, cur_prc * ord_qty_00)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[S3] ' + symbol, 'r': round(_ror, 4)})
+                                sel_lst.append({'c': '[ST3] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
                                 obj_lst.pop(symbol, None)
@@ -375,12 +457,25 @@ class BotCoin():
 
             print(self.p_l[symbol]['ttl_pft'])
 
+            if self.p_l[symbol]['ttl_pft'] > 2:
+                line_message(symbol)
+
+    
+    # All Sell
+    def all_sell_order(self):
+        _, _, bal_lst, _  = self.get_balance_info(self.q_l)
+        for bl in bal_lst:
+            resp = self.ubt.sell_market_order(bl, bal_lst[bl]['b'])
+            print(resp)
+            time.sleep(0.25)
+
 
 if __name__ == '__main__':
 
-    bc = BotCoin()
-    # bc.init_per_day()
-    # bc.stock_order()
+    bu = BotUpbit()
+    # bu.init_per_day()
+    # bu.stock_order()
+    # bu.all_sell_order()
 
     while True:
 
@@ -389,10 +484,10 @@ if __name__ == '__main__':
             tn = datetime.datetime.now()
             tn_start = tn.replace(hour=8, minute=58, second=25)
 
-            if tn >= tn_start and bc.bool_start == False:
-                bc.init_per_day()
-                bc.stock_order()
-                bc.bool_start = True
+            if tn >= tn_start and bu.bool_start == False:
+                bu.init_per_day()
+                bu.stock_order()
+                bu.bool_start = True
 
         except Exception as e:
 
