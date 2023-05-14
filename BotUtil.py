@@ -1,19 +1,12 @@
 from BotConfig import *
 import pandas as pd
+import numpy as np
 import os
 import pickle
 import requests
 import math
 
 def gen_neck_df(df, is_yf=False):
-
-    '''
-    종가 - 1000원 이상, 거래량 - 200000 이상
-    종가 - 1봉전 종가 대비 5% 이하
-    5봉전부터 20봉간 최고최저폭 20% 이상
-    60이평 < 20이평 < 5이평
-    20이평 < 종가 < 20이평 * 1.05
-    '''
 
     if is_yf:
         df['high'] = df['High']
@@ -35,18 +28,36 @@ def gen_neck_df(df, is_yf=False):
         df['height_5_20'] = (((height_5_20_max / height_5_20_min) - 1) * 100).shift(5)
 
         return df
+    
+    
+def RSI(df, period=14):
+    if not (df is None):
+        diff = df['close'] - df['close'].shift(1)
+        df['rsi_up'] = np.where(diff>=0, diff, 0)
+        df['rsi_dn'] = np.where(diff <0, diff.abs(), 0)
+        au = df['rsi_up'].ewm(alpha=(1/period), min_periods=period).mean()
+        ad = df['rsi_dn'].ewm(alpha=(1/period), min_periods=period).mean()
+        df['rsi'] = au / (au + ad) * 100
+        df.drop(['rsi_up', 'rsi_dn'], axis=1, inplace=True)
+        return df
+    
 
-def min_max_height(df):
-    df_len = len(df)
-    if df_len >= 100:
-        ar = [None, None, None, None, None]
-        for i in range(df_len):
-            if i < df_len - 5:
-                hig_v = max(df.iloc[i:i+20]['high'])
-                low_v = min(df.iloc[i:i+20]['low'])
-                hgt_v = ((hig_v / low_v) - 1) * 100
-                ar.append(round(hgt_v, 4))
-        df['height'] = ar
+def MACD(df, s=12, l=26, sgn=9):
+    if not (df is None):
+        df['macd'] = df['close'].ewm(span=s, min_periods=s-1, adjust=False).mean()- df['close'].ewm(span=l, min_periods=l-1, adjust=False).mean()
+        df['macd_signal'] = df['macd'].ewm(span=sgn, min_periods=sgn-1, adjust=False).mean()
+        df['macd_osc'] = df['macd'] - df['macd_signal']
+        # df['macd_osc_prev'] = df['macd_osc'].shift()
+        df['macd_osc_diff'] = df['macd_osc'].diff()
+        df.drop(['macd', 'macd_signal'], axis=1, inplace=True)
+        return df
+    
+
+def VO(df, s=5, l=10):
+    if not (df is None):
+        vma05 = df['volume'].ewm(span=s, min_periods=s).mean()
+        vma10 = df['volume'].ewm(span=l, min_periods=l).mean()
+        df['volume_osc'] = ((vma05 - vma10) / vma10) * 100
         return df
 
 
@@ -79,57 +90,7 @@ def get_qty(crnt_p, max_p):
     return 1 if q == 0 else q
 
 
-def get_code_df(_df, code):
-    _df_list = _df[code]
-    opn_l = [float(dl.split('|')[0]) for dl in _df_list]
-    hig_l = [float(dl.split('|')[1]) for dl in _df_list]
-    low_l = [float(dl.split('|')[2]) for dl in _df_list]
-    cls_l = [float(dl.split('|')[3]) for dl in _df_list]
-    vol_l = [int(dl.split('|')[4]) for dl in _df_list]
-    df = pd.DataFrame({'open': opn_l, 'high': hig_l, 'low': low_l, 'close': cls_l, 'vol': vol_l})
-    return df
-
-
-def moving_average(df):
-    df['close_p'] = df['close'].shift()
-    df['ma05'] = df['close'].rolling(5).mean()
-    df['ma20'] = df['close'].rolling(20).mean()
-    df['ma60'] = df['close'].rolling(60).mean()
-    df['ma05_p'] = df['ma05'].shift()
-    df['ma20_p'] = df['ma20'].shift()
-    df['ma60_p'] = df['ma60'].shift()
-    return df
-
-
-def rsi(df, period=14):
-    _f = df.head(1)
-    _o = {}
-    dt = df.diff(1).dropna()
-    u, d = dt.copy(), dt.copy()
-    u[u < 0] = 0
-    d[d > 0] = 0
-    _o['u'] = u
-    _o['d'] = d
-    au = _o['u'].rolling(window = period).mean()
-    ad = abs(_o['d'].rolling(window = period).mean())
-    rs = au / ad
-    _rsi = pd.Series(100 - (100 / (1 + rs)))
-    rsi = pd.concat([_f, _rsi])
-    return rsi
-
-
-def rsi_vol_zremove(df, code):
-    _a = []
-    for i, d in df.iterrows():
-        if d[code].split('|')[1] != '0':
-            _a.append(int(d[code].split('|')[0]))
-    df_c = pd.DataFrame({'close': _a})
-    _rsi = rsi(df_c['close']).iloc[-1]
-    rsi = 'less' if math.isnan(_rsi) else _rsi
-    return rsi
-
-
-def ror(pv, nv, pr=1, pf=0.00075, spf=0):
+def ror(pv, nv, pr=1, pf=0.0005, spf=0):
     cr = ((nv - (nv * pf) - (nv * spf)) / (pv + (pv * pf)))
     return pr * cr
 
