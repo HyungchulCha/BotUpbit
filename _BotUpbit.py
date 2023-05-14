@@ -431,7 +431,7 @@ if __name__ == '__main__':
         try:
 
             tn = datetime.datetime.now()
-            tn_start = tn.replace(hour=8, minute=58, second=25)
+            tn_start = tn.replace(hour=0, minute=0, second=0)
 
             if tn >= tn_start and bu.bool_start == False:
                 bu.init_per_day()
