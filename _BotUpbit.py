@@ -58,7 +58,7 @@ class BotUpbit():
         self.ubt = pyupbit.Upbit(self.access_key, self.secret_key)
 
         # self.q_l = pyupbit.get_tickers("KRW")
-        self.q_l = ['KRW-MTL','KRW-WAVES','KRW-ARK','KRW-REP','KRW-SBD','KRW-SC','KRW-ICX','KRW-POLYX','KRW-LOOM','KRW-CVC','KRW-IQ','KRW-IOTA','KRW-HIFI','KRW-ELF','KRW-BSV','KRW-THETA','KRW-MOC','KRW-TFUEL','KRW-AERGO','KRW-TT','KRW-CRE','KRW-STPT','KRW-STMX','KRW-KAVA','KRW-AHT','KRW-TON','KRW-HUNT','KRW-PLA','KRW-META','KRW-STRK','KRW-DAWN','KRW-STX','KRW-SOL','KRW-ARB','KRW-EGLD','KRW-SUI']
+        self.q_l = ['KRW-MTL','KRW-WAVES','KRW-ARK','KRW-REP','KRW-SBD','KRW-SC','KRW-ICX','KRW-POLYX','KRW-LOOM','KRW-CVC','KRW-IQ','KRW-IOTA','KRW-HIFI','KRW-ELF','KRW-BSV','KRW-THETA','KRW-MOC','KRW-TFUEL','KRW-AERGO','KRW-TT','KRW-CRE','KRW-STPT','KRW-STMX','KRW-KAVA','KRW-AHT','KRW-TON','KRW-HUNT','KRW-PLA','KRW-META','KRW-STRK','KRW-DAWN','KRW-STX','KRW-SOL','KRW-ARB','KRW-EGLD','KRW-SUI', 'KRW-ARDR']
         prc_ttl, prc_lmt, _, bal_lst  = self.get_balance_info(self.q_l)
         self.b_l = list(set(self.q_l + bal_lst))
         self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
