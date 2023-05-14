@@ -136,7 +136,10 @@ class BotUpbit():
 
                         self.ubt.buy_market_order(symbol, self.prc_buy)
 
+                        prv_qty = 0
+
                         if is_symbol_obj and obj_lst[symbol]['b'] == True:
+                            prv_qty = copy.deepcopy(bal_lst[symbol]['b'])
                             prc_avg = copy.deepcopy(obj_lst[symbol]['a'])
                             obj_lst[symbol]['a'] = (prc_avg + cur_prc)/2
                             obj_lst[symbol]['s'] = 1
@@ -144,9 +147,8 @@ class BotUpbit():
                         else:
                             obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'd': datetime.datetime.now().strftime('%Y%m%d')}
 
-                        prv_qty = copy.deepcopy(bal_lst[symbol]['b'])
                         print(f'Buy - Symbol: {symbol}, Balance: {prv_qty + cur_bal}')
-                        sel_lst.append({'c': '[B] ' + symbol, 'r': (prv_qty + cur_bal)})  
+                        sel_lst.append({'c': '[B] ' + symbol, 'r': (prv_qty + cur_bal)}) 
 
 
                 if is_notnul_obj and is_symbol_bal:
@@ -238,7 +240,7 @@ class BotUpbit():
                             print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                             sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
-                            
+
 
                     elif obj_lst[symbol]['x'] > cur_prc:
                         
