@@ -406,24 +406,6 @@ class BotUpbit():
                     self.ubt.cancel_order(rmn['uuid'])
 
     
-    # Set Profit List
-    def set_profit_list(self, symbol, qty, _ror, end=False):
-        pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-        pft_cur = (qty / self.p_l[symbol]['fst_qty']) * _ror
-        self.p_l[symbol]['sum_pft'] = pft_sum + pft_cur
-
-        if end:
-            pft_ttl = copy.deepcopy(self.p_l[symbol]['ttl_pft'])
-            pft_sum = copy.deepcopy(self.p_l[symbol]['sum_pft'])
-            self.p_l[symbol]['ttl_pft'] = pft_ttl * pft_sum
-            self.p_l[symbol]['sum_pft'] = 0
-
-            print(self.p_l[symbol]['ttl_pft'])
-
-            if self.p_l[symbol]['ttl_pft'] > 2:
-                line_message(symbol)
-
-    
     # All Sell
     def all_sell_order(self):
         _, _, bal_lst, _  = self.get_balance_info(self.q_l)
