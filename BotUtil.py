@@ -47,7 +47,6 @@ def MACD(df, s=12, l=26, sgn=9):
         df['macd'] = df['close'].ewm(span=s, min_periods=s-1, adjust=False).mean()- df['close'].ewm(span=l, min_periods=l-1, adjust=False).mean()
         df['macd_signal'] = df['macd'].ewm(span=sgn, min_periods=sgn-1, adjust=False).mean()
         df['macd_osc'] = df['macd'] - df['macd_signal']
-        # df['macd_osc_prev'] = df['macd_osc'].shift()
         df['macd_osc_diff'] = df['macd_osc'].diff()
         df.drop(['macd', 'macd_signal'], axis=1, inplace=True)
         return df
