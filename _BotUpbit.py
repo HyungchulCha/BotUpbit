@@ -156,12 +156,19 @@ class BotUpbit():
                 - 이미 매수한 symbol 1.125배 추가매수
                 '''
 
+                # if \
+                # is_psb_ord and \
+                # (macd_osc < 0) and \
+                # (macd_osc_diff < 0) and \
+                # (rsi < 30) and \
+                # (volume_osc >= 50) \
+                # :
                 if \
                 is_psb_ord and \
                 (macd_osc < 0) and \
                 (macd_osc_diff < 0) and \
                 (rsi < 30) and \
-                (volume_osc >= 50) \
+                ((volume_osc >= 57.5) or (-0.1 < volume_osc < 0.1)) \
                 :
 
                     self.ubt.buy_market_order(symbol, self.prc_buy)
