@@ -132,7 +132,7 @@ class BotUpbit():
                 '''
 
                 if is_symbol_bal and (not is_symbol_obj):
-                    print(symbol)
+                    
                     if bal_lst[symbol]['b'] * cur_prc < self.const_dn:
                         obj_lst[symbol] = {'x': 1, 'a': 1, 'b': False, 'c': 1, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                     else:
