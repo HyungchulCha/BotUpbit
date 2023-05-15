@@ -123,6 +123,7 @@ class BotUpbit():
                 volume_osc = df_head['volume_osc'].iloc[-1]
 
                 cur_prc = float(close)
+                cur_bal = float(self.prc_buy / cur_prc)
                 is_psb_ord = self.prc_lmt > self.prc_buy
                 is_psb_buy = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))
                 is_psb_sel = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] > self.const_dn))
@@ -162,15 +163,8 @@ class BotUpbit():
                 (rsi < 30) and \
                 (volume_osc >= 50) \
                 :
-                    
-                    if is_symbol_obj and obj_lst[symbol]['b'] == True:
-                        prc_buy = self.prc_buy * 1.125
-                        cur_bal = float(self.prc_buy * 1.125 / cur_prc)
-                    else:
-                        prc_buy = self.prc_buy
-                        cur_bal = float(self.prc_buy / cur_prc)
 
-                    self.ubt.buy_market_order(symbol, prc_buy)
+                    self.ubt.buy_market_order(symbol, self.prc_buy)
                     obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                     print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
                     sel_lst.append({'c': '[B] ' + symbol, 'r': (cur_bal)})
