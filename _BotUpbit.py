@@ -58,7 +58,7 @@ class BotUpbit():
         self.ubt = pyupbit.Upbit(self.access_key, self.secret_key)
 
         # self.q_l = pyupbit.get_tickers("KRW")
-        self.q_l = ['KRW-MTL','KRW-WAVES','KRW-ARK','KRW-REP','KRW-SBD','KRW-SC','KRW-ICX','KRW-POLYX','KRW-LOOM','KRW-CVC','KRW-IQ','KRW-IOTA','KRW-HIFI','KRW-ELF','KRW-BSV','KRW-THETA','KRW-MOC','KRW-TFUEL','KRW-AERGO','KRW-TT','KRW-CRE','KRW-STPT','KRW-STMX','KRW-KAVA','KRW-AHT','KRW-TON','KRW-HUNT','KRW-PLA','KRW-META','KRW-STRK','KRW-DAWN','KRW-STX','KRW-SOL','KRW-ARB','KRW-EGLD','KRW-SUI']
+        self.q_l = ['KRW-MTL','KRW-WAVES','KRW-ARK','KRW-REP','KRW-SBD','KRW-SC','KRW-ICX','KRW-POLYX','KRW-LOOM','KRW-CVC','KRW-IQ','KRW-IOTA','KRW-HIFI','KRW-ELF','KRW-BSV','KRW-THETA','KRW-MOC','KRW-TFUEL','KRW-AERGO','KRW-TT','KRW-CRE','KRW-STPT','KRW-STMX','KRW-KAVA','KRW-AHT','KRW-TON','KRW-HUNT','KRW-PLA','KRW-META','KRW-STRK','KRW-DAWN','KRW-STX','KRW-SOL','KRW-ARB','KRW-EGLD','KRW-SUI', 'KRW-TRX']
         prc_ttl, prc_lmt, _, bal_lst  = self.get_balance_info(self.q_l)
         self.b_l = list(set(self.q_l + bal_lst))
         self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
@@ -107,7 +107,7 @@ class BotUpbit():
 
             df = MACD(RSI(VO(self.gen_ubt_df(symbol, 'minute5', 80))))
 
-            if not (df is None):
+            if not (df is None) and symbol != 'KRW-TRX':
                 
                 df_head = df.tail(2).head(1)
                 close = df_head['close'].iloc[-1]
@@ -130,6 +130,7 @@ class BotUpbit():
                 '''
 
                 if is_symbol_bal and (not is_symbol_obj):
+                    print(symbol)
                     if bal_lst[symbol]['b'] * cur_prc < self.const_dn:
                         obj_lst[symbol] = {'x': 1, 'a': 1, 'b': False, 'c': 1, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                     else:
