@@ -66,12 +66,13 @@ class BotUpbit():
         self.prc_buy = prc_buy if prc_buy > self.const_dn else self.const_dn
 
         if self.prc_lmt < self.prc_buy:
-            line_message('Insufficient Balance !!!')
+            line_message('BotUpbit Insufficient Balance !!!')
 
         int_prc_ttl = int(self.prc_ttl)
+        int_prc_lmt = int(self.prc_lmt)
         len_bal_lst = len(self.b_l)
 
-        line_message(f'BotUpbit \nTotal Price : {int_prc_ttl:,} KRW \nSymbol List : {len_bal_lst}')
+        line_message(f'BotUpbit \nTotal Price : {int_prc_ttl:,} KRW \nLimit Price : {int_prc_lmt:,} KRW \nSymbol List : {len_bal_lst}')
 
         __tn = datetime.datetime.now()
         __tn_min = __tn.minute % 5
