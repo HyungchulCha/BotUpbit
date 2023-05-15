@@ -151,7 +151,6 @@ class BotUpbit():
 
                 if \
                 is_psb_ord and \
-                ((not is_symbol_bal) or is_psb_buy) and \
                 (macd_osc < 0) and \
                 (macd_osc_diff < 0) and \
                 (rsi < 30) and \
