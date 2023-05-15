@@ -412,7 +412,8 @@ class BotUpbit():
                         'a': avgp,
                         'b': blnc
                     }
-                    prc = prc + (bal_cur[tikr] * blnc)
+                    if tikr in bal_cur:
+                        prc = prc + (bal_cur[tikr] * blnc)
                     lst.append(tikr)
                 else:
                     prc = prc + blnc
