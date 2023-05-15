@@ -44,7 +44,7 @@ class BotUpbit():
             tn = datetime.datetime.now()
             tn_0 = tn.replace(hour=0, minute=0, second=0)
             tn_d = int(((tn - tn_0).seconds) % 300)
-            print(tn_d)
+            print(f'{tn_d} Second')
 
             if tn_d <= 150:
                 time.sleep(300 - tn_d - 150)
@@ -53,7 +53,7 @@ class BotUpbit():
 
             self.bool_balance = True
 
-        print('##################################################')
+        print('##############################')
 
         self.ubt = pyupbit.Upbit(self.access_key, self.secret_key)
 
@@ -363,8 +363,8 @@ class BotUpbit():
         self.time_backtest.start()
 
         int_prc_ttl = int(self.prc_ttl)
-        str_start = _tn.strftime('%Y.%m.%d %H:%M:%S')
-        str_end = __tn.strftime('%Y.%m.%d %H:%M:%S')
+        str_start = _tn.strftime('%Y/%m/%d %H:%M:%S')
+        str_end = __tn.strftime('%Y/%m/%d %H:%M:%S')
 
         line_message(f'BotUpbit \nStart : {str_start}, \nEnd : {str_end}, \nTotal Price : {int_prc_ttl:,} KRW {sel_txt}')
 
