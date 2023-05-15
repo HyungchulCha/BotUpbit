@@ -58,12 +58,12 @@ class BotUpbit():
         self.ubt = pyupbit.Upbit(self.access_key, self.secret_key)
 
         # self.q_l = pyupbit.get_tickers("KRW")
-        self.q_l = ['KRW-MTL','KRW-WAVES','KRW-ARK','KRW-REP','KRW-SBD','KRW-SC','KRW-ICX','KRW-POLYX','KRW-LOOM','KRW-CVC','KRW-IQ','KRW-IOTA','KRW-HIFI','KRW-ELF','KRW-BSV','KRW-THETA','KRW-MOC','KRW-TFUEL','KRW-AERGO','KRW-TT','KRW-CRE','KRW-STPT','KRW-STMX','KRW-KAVA','KRW-AHT','KRW-TON','KRW-HUNT','KRW-PLA','KRW-META','KRW-STRK','KRW-DAWN','KRW-STX','KRW-SOL','KRW-ARB','KRW-EGLD','KRW-SUI', 'KRW-ARDR']
+        self.q_l = ['KRW-MTL','KRW-WAVES','KRW-ARK','KRW-REP','KRW-SBD','KRW-SC','KRW-ICX','KRW-POLYX','KRW-LOOM','KRW-CVC','KRW-IQ','KRW-IOTA','KRW-HIFI','KRW-ELF','KRW-BSV','KRW-THETA','KRW-MOC','KRW-TFUEL','KRW-AERGO','KRW-TT','KRW-CRE','KRW-STPT','KRW-STMX','KRW-KAVA','KRW-AHT','KRW-TON','KRW-HUNT','KRW-PLA','KRW-META','KRW-STRK','KRW-DAWN','KRW-STX','KRW-SOL','KRW-ARB','KRW-EGLD','KRW-SUI']
         prc_ttl, prc_lmt, _, bal_lst  = self.get_balance_info(self.q_l)
         self.b_l = list(set(self.q_l + bal_lst))
         self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
         self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - (prc_ttl - self.const_up)
-        prc_buy = self.prc_ttl / (len(self.q_l) * 4.5)
+        prc_buy = self.prc_ttl / (len(self.q_l) * 5)
         self.prc_buy = prc_buy if prc_buy > self.const_dn else self.const_dn
 
         line_message(f'BotUpbit \nTotal Price : {self.prc_ttl} KRW \nSymbol List : {len(self.b_l)}')
@@ -116,44 +116,65 @@ class BotUpbit():
                 rsi = df_head['rsi'].iloc[-1]
                 volume_osc = df_head['volume_osc'].iloc[-1]
 
-                is_posble_ord = self.prc_lmt > self.prc_buy
                 cur_prc = float(close)
-                cur_bal = float(self.prc_buy / cur_prc)
+                is_psb_ord = self.prc_lmt > self.prc_buy
+                is_psb_buy = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))
+                is_psb_sel = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] > self.const_dn))
+
+                '''
+                잔고 O, DB X
+                1) 잔여수량 남은경우 - 매수 False
+                2) 수동구매 누른경우 - 매수 True
+                잔고 X, DB O
+                1) DB 제거
+                '''
 
                 if is_symbol_bal and (not is_symbol_obj):
-
                     if bal_lst[symbol]['b'] * cur_prc < self.const_dn:
                         obj_lst[symbol] = {'x': 1, 'a': 1, 'b': False, 'c': 1, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
                     else:
                         obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 'b': True, 'c': 1, 's': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-                    # print(f'{symbol} : Miss Match, Obj[X], Bal[O] !!!')
                 
-                if (not is_symbol_bal) and is_symbol_obj:
+                if not is_symbol_bal and is_symbol_obj:
                     obj_lst.pop(symbol, None)
-                    # print(f'{symbol} : Miss Match, Obj[O], Bal[X] !!!')
 
-                if is_posble_ord and ((not is_symbol_bal) or (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))):
+                '''
+                매수
+                - 구매가능 금액이 있고
+                - 잔고에 없거나, 잔고는 있는데 최소 금액보다 낮은 경우
+                - macd_osc < 0, macd_osc 감소하는 상태(macd_osc_diff < 0)
+                - rsi < 30
+                - volume_osc >= 50
+                - 이미 매수한 symbol 1.125배 추가매수
+                '''
 
-                    if (macd_osc < 0) and (macd_osc_diff < 0) and (rsi < 30) and (volume_osc >= 50):
+                if \
+                is_psb_ord and \
+                ((not is_symbol_bal) or is_psb_buy) and \
+                (macd_osc < 0) and \
+                (macd_osc_diff < 0) and \
+                (rsi < 30) and \
+                (volume_osc >= 50) \
+                :
+                    
+                    if is_symbol_obj and obj_lst[symbol]['b'] == True:
+                        prc_buy = self.prc_buy * 1.125
+                        cur_bal = float(self.prc_buy * 1.125 / cur_prc)
+                    else:
+                        prc_buy = self.prc_buy
+                        cur_bal = float(self.prc_buy / cur_prc)
 
-                        self.ubt.buy_market_order(symbol, self.prc_buy)
-
-                        if is_symbol_obj and obj_lst[symbol]['b'] == True:
-                            prv_cnt = copy.deepcopy(obj_lst[symbol]['c'])
-                            prv_avg = copy.deepcopy(obj_lst[symbol]['a'])
-
-                            obj_lst[symbol]['a'] = ((prv_avg * prv_cnt + cur_prc) / (prv_cnt + 1))
-                            obj_lst[symbol]['c'] = prv_cnt + 1
-                            obj_lst[symbol]['s'] = 1
-                            obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
-                        else:
-                            obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-
-                        print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
-                        sel_lst.append({'c': '[B] ' + symbol, 'r': (cur_bal)}) 
+                    self.ubt.buy_market_order(symbol, prc_buy)
+                    obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+                    print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
+                    sel_lst.append({'c': '[B] ' + symbol, 'r': (cur_bal)})
 
 
-                if is_notnul_obj and is_symbol_bal:
+                '''
+                매도
+                DB O, 잔고 O, 주문가능금액 이상
+                '''
+                if is_notnul_obj and is_psb_sel:
                     
                     ts1 = 0.05
                     ts2 = 0.075
@@ -177,15 +198,12 @@ class BotUpbit():
                         ord_qty_00 = copy.deepcopy(bal_lst[symbol]['b'])
                         ord_qty_01 = ord_qty_00 * 0.3
                         ord_qty_02 = ord_qty_00 * 0.5
-                        psb_ord_00 = cur_prc * ord_qty_00 > self.const_dn
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        # print(f'{symbol} : Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}, Increase !!!')
-
                         if 1 < bal_pft < tsm:
 
-                            if (sel_cnt == 1) and (sl1 <= bal_pft) and psb_ord_00:
+                            if (sel_cnt == 1) and (sl1 <= bal_pft):
 
                                 bool_01_end = False
                                 if psd_ord_01:
@@ -206,7 +224,7 @@ class BotUpbit():
                                 if bool_01_end:
                                     obj_lst.pop(symbol, None)
                             
-                            elif (sel_cnt == 2) and (sl2 <= bal_pft) and psb_ord_00:
+                            elif (sel_cnt == 2) and (sl2 <= bal_pft):
 
                                 bool_02_end = False
                                 if psb_ord_02:
@@ -225,7 +243,7 @@ class BotUpbit():
                                 if bool_02_end:
                                     obj_lst.pop(symbol, None)
 
-                            elif (sel_cnt == 3) and (sl3 <= bal_pft) and psb_ord_00:
+                            elif (sel_cnt == 3) and (sl3 <= bal_pft):
 
                                 self.ubt.sell_market_order(symbol, ord_qty_00)
                                 _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
@@ -235,7 +253,7 @@ class BotUpbit():
                                 obj_lst[symbol]['s'] = sel_cnt + 1
                                 obj_lst.pop(symbol, None)
 
-                        elif (tsm <= bal_pft) and psb_ord_00:
+                        elif (tsm <= bal_pft):
 
                             self.ubt.sell_market_order(symbol, ord_qty_00)
                             _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
@@ -256,15 +274,12 @@ class BotUpbit():
                         ord_qty_00 = copy.deepcopy(bal_lst[symbol]['b'])
                         ord_qty_01 = ord_qty_00 * 0.3
                         ord_qty_02 = ord_qty_00 * 0.5
-                        psb_ord_00 = cur_prc * ord_qty_00 > self.const_dn
                         psd_ord_01 = cur_prc * ord_qty_01 > self.const_dn
                         psb_ord_02 = cur_prc * ord_qty_02 > self.const_dn
 
-                        # print(f'{symbol} : Max Price {obj_max}, Max Profit {round(obj_pft, 4)}, Current Price {cur_prc}, Current Profit {round(bal_pft, 4)}')
-
                         if 1 < bal_pft < tsm:
 
-                            if (sel_cnt == 1) and (ts1 <= los_dif) and psb_ord_00:
+                            if (sel_cnt == 1) and (ts1 <= los_dif):
 
                                 bool_01_end = False
                                 if psd_ord_01:
@@ -285,7 +300,7 @@ class BotUpbit():
                                 if bool_01_end:
                                     obj_lst.pop(symbol, None)
                             
-                            elif (sel_cnt == 2) and (ts2 <= los_dif) and psb_ord_00:
+                            elif (sel_cnt == 2) and (ts2 <= los_dif):
 
                                 bool_02_end = False
                                 if psb_ord_02:
@@ -304,7 +319,7 @@ class BotUpbit():
                                 if bool_02_end:
                                     obj_lst.pop(symbol, None)
 
-                            elif (sel_cnt == 3) and (ts3 <= los_dif) and psb_ord_00:
+                            elif (sel_cnt == 3) and (ts3 <= los_dif):
 
                                 self.ubt.sell_market_order(symbol, ord_qty_00)
                                 _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
@@ -314,7 +329,7 @@ class BotUpbit():
                                 obj_lst[symbol]['s'] = sel_cnt + 1
                                 obj_lst.pop(symbol, None)
 
-                        elif (tsm <= bal_pft) and psb_ord_00:
+                        elif (tsm <= bal_pft):
 
                             self.ubt.sell_market_order(symbol, ord_qty_00)
                             _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
@@ -322,7 +337,7 @@ class BotUpbit():
                             sel_lst.append({'c': '[S+] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
-                        elif (bal_pft <= ctl) and psb_ord_00:
+                        elif (bal_pft <= ctl):
 
                             self.ubt.sell_market_order(symbol, ord_qty_00)
                             _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
@@ -330,8 +345,9 @@ class BotUpbit():
                             sel_lst.append({'c': '[S-] ' + symbol, 'r': round(_ror, 4)})
                             obj_lst.pop(symbol, None)
 
+
         save_file(FILE_URL_BLNC_3M, obj_lst)
-        # print(self.p_l)
+        print(obj_lst)
 
         sel_txt = ''
         for sl in sel_lst:
