@@ -62,7 +62,7 @@ class BotUpbit():
         self.b_l = list(set(self.q_l + bal_lst))
         self.prc_ttl = prc_ttl if prc_ttl < self.const_up else self.const_up
         self.prc_lmt = prc_lmt if prc_ttl < self.const_up else prc_lmt - (prc_ttl - self.const_up)
-        prc_buy = self.prc_ttl / (len(self.q_l) * 0.6)
+        prc_buy = self.prc_ttl / (len(self.q_l) * 0.3)
         self.prc_buy = prc_buy if prc_buy > self.const_dn else self.const_dn
 
         if self.prc_lmt < self.prc_buy:
@@ -168,7 +168,7 @@ class BotUpbit():
                 (macd_osc < 0) and \
                 (macd_osc_diff < 0) and \
                 (rsi < 30) and \
-                ((volume_osc >= 57.5) or (-0.1 < volume_osc < 0.1)) \
+                ((volume_osc >= 50)) \
                 :
 
                     self.ubt.buy_market_order(symbol, self.prc_buy)
@@ -186,10 +186,10 @@ class BotUpbit():
                     ts1 = 0.05
                     ts2 = 0.075
                     ts3 = 0.1
-                    sl1 = 1.015
-                    sl2 = 1.025
+                    sl1 = 1.005
+                    sl2 = 1.02
                     sl3 = 1.035
-                    tsm = 1.045
+                    tsm = 1.05
                     ctl = 0.8
 
                     if obj_lst[symbol]['x'] < cur_prc:
