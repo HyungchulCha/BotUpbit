@@ -160,7 +160,7 @@ class BotUpbit():
                 (macd_osc < 0) and \
                 (macd_osc_diff < 0) and \
                 (rsi < 30) and \
-                ((volume_osc >= 40)) \
+                (volume_osc >= 40) \
                 :
                     is_psb_ord = self.prc_lmt > self.prc_buy
 
