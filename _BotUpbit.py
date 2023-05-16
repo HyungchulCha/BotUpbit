@@ -169,7 +169,7 @@ class BotUpbit():
                 ((volume_osc >= 50)) \
                 :
                     is_psb_ord = self.prc_lmt > self.prc_buy
-                    
+
                     if is_psb_ord:
 
                         self.ubt.buy_market_order(symbol, self.prc_buy)
@@ -188,9 +188,9 @@ class BotUpbit():
                     ts2 = 0.075
                     ts3 = 0.1
                     sl1 = 1.005
-                    sl2 = 1.02
-                    sl3 = 1.035
-                    tsm = 1.05
+                    sl2 = 1.025
+                    sl3 = 1.045
+                    tsm = 1.065
                     ctl = 0.8
 
                     if obj_lst[symbol]['x'] < cur_prc:
