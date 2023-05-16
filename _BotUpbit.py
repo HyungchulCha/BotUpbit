@@ -112,7 +112,7 @@ class BotUpbit():
             is_symbol_bal = symbol in bal_lst
             is_symbol_obj = symbol in obj_lst
 
-            df = MACD(RSI(VO(self.gen_ubt_df(symbol, 'minute5', 100))))
+            df = MACD(RSI(VO(self.gen_ubt_df(symbol, 'minute5', 80))))
 
             if (not (df is None)):
                 
