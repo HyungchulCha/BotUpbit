@@ -124,7 +124,6 @@ class BotUpbit():
 
                 cur_prc = float(close)
                 cur_bal = float(self.prc_buy / cur_prc)
-                is_psb_ord = self.prc_lmt > self.prc_buy
                 is_psb_buy = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] <= self.const_dn))
                 is_psb_sel = (is_symbol_bal and (cur_prc * bal_lst[symbol]['b'] > self.const_dn))
 
@@ -164,17 +163,19 @@ class BotUpbit():
                 # (volume_osc >= 50) \
                 # :
                 if \
-                is_psb_ord and \
                 (macd_osc < 0) and \
                 (macd_osc_diff < 0) and \
                 (rsi < 30) and \
                 ((volume_osc >= 50)) \
                 :
+                    is_psb_ord = self.prc_lmt > self.prc_buy
+                    
+                    if is_psb_ord:
 
-                    self.ubt.buy_market_order(symbol, self.prc_buy)
-                    obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
-                    print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
-                    sel_lst.append({'c': '[B] ' + symbol, 'r': (cur_bal)})
+                        self.ubt.buy_market_order(symbol, self.prc_buy)
+                        obj_lst[symbol] = {'x': cur_prc, 'a': cur_prc, 's': 1, 'b': True, 'c': 1, 'd': datetime.datetime.now().strftime('%Y%m%d')}
+                        print(f'Buy - Symbol: {symbol}, Balance: {cur_bal}')
+                        sel_lst.append({'c': '[B] ' + symbol, 'r': (cur_bal)})
 
 
                 '''
