@@ -265,7 +265,7 @@ class BotUpbit():
                                 self.ubt.sell_market_order(symbol, qty)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[SH2] ' + symbol, 'r': round(_ror, 4)})
+                                sel_lst.append({'c': '[SH3] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
 
@@ -277,7 +277,7 @@ class BotUpbit():
                                 self.ubt.sell_market_order(symbol, ord_qty_00)
                                 _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[SH3] ' + symbol, 'r': round(_ror, 4)})
+                                sel_lst.append({'c': '[SH4] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
                                 obj_lst.pop(symbol, None)
@@ -366,7 +366,7 @@ class BotUpbit():
                                 self.ubt.sell_market_order(symbol, qty)
                                 _ror = ror(obj_fst * qty, cur_prc * qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[ST2] ' + symbol, 'r': round(_ror, 4)})
+                                sel_lst.append({'c': '[ST3] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
 
@@ -378,7 +378,7 @@ class BotUpbit():
                                 self.ubt.sell_market_order(symbol, ord_qty_00)
                                 _ror = ror(obj_fst * ord_qty_00, cur_prc * ord_qty_00)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
-                                sel_lst.append({'c': '[ST3] ' + symbol, 'r': round(_ror, 4)})
+                                sel_lst.append({'c': '[ST4] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
                                 obj_lst[symbol]['s'] = sel_cnt + 1
                                 obj_lst.pop(symbol, None)
