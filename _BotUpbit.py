@@ -184,9 +184,9 @@ class BotUpbit():
                     ts4 = 0.1
                     sl1 = 0.01
                     sl2 = 1.02
-                    sl3 = 1.04
-                    sl4 = 1.06
-                    tsm = 1.08
+                    sl3 = 1.03
+                    sl4 = 1.04
+                    tsm = 1.05
                     ctl = 0.8
 
                     if obj_lst[symbol]['x'] < cur_prc:
