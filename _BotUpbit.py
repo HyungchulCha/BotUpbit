@@ -182,10 +182,10 @@ class BotUpbit():
                     ts2 = 0.05
                     ts3 = 0.075
                     ts4 = 0.1
-                    sl1 = 0.005
-                    sl2 = 1.01
-                    sl3 = 1.02
-                    sl4 = 1.04
+                    sl1 = 0.01
+                    sl2 = 1.02
+                    sl3 = 1.04
+                    sl4 = 1.06
                     tsm = 1.08
                     ctl = 0.8
 
@@ -223,7 +223,8 @@ class BotUpbit():
                                     bool_01_end = True
 
                                 self.ubt.sell_market_order(symbol, qty)
-                                _ror = ror(obj_fst * qty, cur_prc * qty)
+                                rto_qty = qty / ord_qty_00
+                                _ror = ror(obj_fst * rto_qty, cur_prc * rto_qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[SH1] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
@@ -244,7 +245,8 @@ class BotUpbit():
                                     bool_02_end = True
 
                                 self.ubt.sell_market_order(symbol, qty)
-                                _ror = ror(obj_fst * qty, cur_prc * qty)
+                                rto_qty = qty / ord_qty_00
+                                _ror = ror(obj_fst * rto_qty, cur_prc * rto_qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[SH2] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
@@ -263,7 +265,8 @@ class BotUpbit():
                                     bool_03_end = True
 
                                 self.ubt.sell_market_order(symbol, qty)
-                                _ror = ror(obj_fst * qty, cur_prc * qty)
+                                rto_qty = qty / ord_qty_00
+                                _ror = ror(obj_fst * rto_qty, cur_prc * rto_qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[SH3] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
@@ -324,7 +327,8 @@ class BotUpbit():
                                     bool_01_end = True
 
                                 self.ubt.sell_market_order(symbol, qty)
-                                _ror = ror(obj_fst * qty, cur_prc * qty)
+                                rto_qty = qty / ord_qty_00
+                                _ror = ror(obj_fst * rto_qty, cur_prc * rto_qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[ST1] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
@@ -345,7 +349,8 @@ class BotUpbit():
                                     bool_02_end = True
 
                                 self.ubt.sell_market_order(symbol, qty)
-                                _ror = ror(obj_fst * qty, cur_prc * qty)
+                                rto_qty = qty / ord_qty_00
+                                _ror = ror(obj_fst * rto_qty, cur_prc * rto_qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[ST2] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
@@ -364,7 +369,8 @@ class BotUpbit():
                                     bool_03_end = True
 
                                 self.ubt.sell_market_order(symbol, qty)
-                                _ror = ror(obj_fst * qty, cur_prc * qty)
+                                rto_qty = qty / ord_qty_00
+                                _ror = ror(obj_fst * rto_qty, cur_prc * rto_qty)
                                 print(f'Sell - Symbol: {symbol}, Profit: {round(_ror, 4)}')
                                 sel_lst.append({'c': '[ST3] ' + symbol, 'r': round(_ror, 4)})
                                 obj_lst[symbol]['d'] = datetime.datetime.now().strftime('%Y%m%d')
@@ -517,4 +523,3 @@ if __name__ == '__main__':
 
             line_message(f"BotUpbit Error : {e}")
             break
-
